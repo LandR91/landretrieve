@@ -1,0 +1,602 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  AGENCY
+  AGENT
+  VISITOR
+}
+
+enum UserTitle {
+  SIG
+  SIGRA
+}
+
+enum ListingType {
+  SALE
+  RENT
+}
+
+enum PropertyStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  EXPIRED
+  SOLD
+}
+
+enum PropertyTypeParent {
+  VILLE
+  AGRITURISMI
+  AZIENDE_AGRICOLE
+  CASALE
+  TERRENO
+}
+
+enum SubscriptionPlan {
+  CONNECT
+  SIGNATURE
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  TRIALING
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COUNTERED
+}
+
+enum CatasterType {
+  TERRENI
+  FABBRICATI
+}
+
+// ─── USER ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(cuid())
+  username    String    @unique
+  email       String    @unique
+  password    String
+  role        UserRole  @default(VISITOR)
+  title       UserTitle? // Sig./Sig.ra — NON per AGENCY
+  firstName   String?
+  lastName    String?
+  displayName String?
+  avatar      String?   // Cloudflare R2 URL
+  phone       String?
+  country     String?
+  isVerified  Boolean   @default(false)
+  isActive    Boolean   @default(true)
+  lastLogin   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  agencyProfile    AgencyProfile?
+  agentProfile     AgentProfile?
+  properties       Property[]
+  sentThreads      Thread[]         @relation("SentThreads")
+  receivedThreads  Thread[]         @relation("ReceivedThreads")
+  messages         Message[]
+  crmLeads         CrmLead[]
+  savedProperties  SavedProperty[]
+  savedSearches    SavedSearch[]
+  subscription     Subscription?
+  reviews          Review[]
+  sentOffers       PropertyOffer[]  @relation("SentOffers")
+  receivedOffers   PropertyOffer[]  @relation("ReceivedOffers")
+  propertyRequests PropertyRequest[]
+  categoryViews    CategoryView[]
+}
+
+// ─── AGENCY PROFILE ───────────────────────────────────────────────────────────
+
+model AgencyProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  name             String
+  slug             String   @unique
+  taxNumber        String?
+  licenses         String?
+  phone            String?
+  mobile           String?
+  email            String?
+  website          String?
+  address          String?
+  mapAddress       String?
+  lat              Decimal?
+  lng              Decimal?
+  language         String?
+  serviceArea      String?
+  specialties      String?
+  bio              String?
+  logo             String?  // "logo agenzia" — NON foto personale
+  facebook         String?
+  instagram        String?
+  linkedin         String?
+  twitter          String?
+  youtube          String?
+  whatsapp         String?
+  telegram         String?
+  tiktok           String?
+  isVerified       Boolean  @default(false)
+  isVisible        Boolean  @default(true)
+  stripeCustomerId String?
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agents     AgentProfile[]
+  properties Property[]
+}
+
+// ─── AGENT PROFILE ────────────────────────────────────────────────────────────
+
+model AgentProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  agencyId         String?
+  slug             String   @unique
+  position         String?
+  license          String?
+  taxNumber        String?
+  mobile           String?
+  officeNumber     String?
+  email            String?
+  address          String?
+  serviceArea      String?
+  specialties      String?
+  language         String?
+  website          String?
+  bio              String?
+  linkedin         String?
+  whatsapp         String?
+  skype            String?
+  isVerified       Boolean  @default(false)
+  isVisible        Boolean  @default(true)
+  stripeCustomerId String?
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agency     AgencyProfile? @relation(fields: [agencyId], references: [id])
+  properties Property[]
+}
+
+// ─── PROPERTY ─────────────────────────────────────────────────────────────────
+
+model Property {
+  id           String         @id @default(cuid())
+  propertyId   String?        @unique // LR00042
+  title        String
+  slug         String         @unique
+  description  String?
+  status       PropertyStatus @default(DRAFT)
+  listingType  ListingType    @default(SALE)
+  price        Decimal?
+  currency     String         @default("EUR")
+  size         Decimal?
+  landSize     Decimal?
+  bedrooms     Int?
+  bathrooms    Int?
+  garages      Int?
+  rooms        Int?
+  yearBuilt    Int?
+  address      String?
+  regione      String?
+  provincia    String?
+  comune       String?
+  frazione     String?
+  zipCode      String?
+  country      String         @default("Italia")
+  lat          Decimal?
+  lng          Decimal?
+
+  // Dati catastali
+  catasterType       CatasterType?
+  catasterProvincia  String?
+  catasterComune     String?
+  catasterFoglio     String?
+  catasterParticella String?
+  catasterSub        String?   // solo Fabbricati, non obbligatorio
+
+  // Media
+  videoUrl         String?
+  virtualTourUrl   String?
+  virtualTourEmbed String?   // codice iframe/embed 360°
+
+  // Taxonomy
+  propertyTypeParent PropertyTypeParent?
+  propertyType       String?             // sottotipo specifico
+  propertyStatus     String?
+  labels             String[]
+
+  // Energy
+  energyClass String?
+  energyIndex Decimal?
+
+  // Ownership
+  userId   String?
+  agentId  String?
+  agencyId String?
+
+  // Payment / Visibility
+  paymentStatus  String    @default("not_paid")
+  isInPrimoPiano Boolean   @default(false)
+  primoPianoUntil DateTime? // null = fino a vendita/cancellazione
+  neverExpire    Boolean   @default(false)
+  expiresAt      DateTime?
+  privateNote    String?
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User?          @relation(fields: [userId], references: [id])
+  agent       AgentProfile?  @relation(fields: [agentId], references: [id])
+  agency      AgencyProfile? @relation(fields: [agencyId], references: [id])
+  images      PropertyImage[]
+  features    PropertyFeature[]
+  floorPlans  FloorPlan[]
+  attachments PropertyAttachment[]
+  enquiries   CrmEnquiry[]
+  deals       CrmDeal[]
+  savedBy     SavedProperty[]
+  insights    Insight[]
+  reviews     Review[]
+  offers      PropertyOffer[]
+}
+
+model PropertyImage {
+  id         String   @id @default(cuid())
+  propertyId String
+  url        String   // Cloudflare R2
+  order      Int      @default(0)
+  alt        String?
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PropertyFeature {
+  id         String   @id @default(cuid())
+  propertyId String
+  feature    String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model FloorPlan {
+  id         String   @id @default(cuid())
+  propertyId String
+  title      String?
+  size       Decimal?
+  rooms      Int?
+  bathrooms  Int?
+  imageUrl   String?
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model PropertyAttachment {
+  id         String   @id @default(cuid())
+  propertyId String
+  name       String?
+  url        String   // solo PDF su R2
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+// ─── OFFERTE ──────────────────────────────────────────────────────────────────
+
+model PropertyOffer {
+  id             String      @id @default(cuid())
+  propertyId     String
+  senderId       String
+  receiverId     String
+  offerPrice     Decimal
+  currency       String
+  senderName     String
+  senderEmail    String
+  senderPhone    String?
+  senderLocation String?     // "da dove scrivi"
+  senderAvatar   String?
+  message        String?     // messaggio facoltativo
+  status         OfferStatus @default(PENDING)
+  threadId       String?     // thread aperto automaticamente
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id])
+  sender   User     @relation("SentOffers", fields: [senderId], references: [id])
+  receiver User     @relation("ReceivedOffers", fields: [receiverId], references: [id])
+}
+
+// ─── PROPERTY REQUEST (Cerca Immobile) ────────────────────────────────────────
+
+model PropertyRequest {
+  id            String   @id @default(cuid())
+  userId        String
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  liveCountry   String?
+  liveCity      String?
+  searchComuni  String[]
+  searchRegioni String[]
+  propertyTypes String[]
+  priceMin      Decimal?
+  priceMax      Decimal?
+  message       String?
+  status        String   @default("new")
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ─── CATEGORY VIEW (per notifiche) ────────────────────────────────────────────
+
+model CategoryView {
+  id           String   @id @default(cuid())
+  userId       String?  // null se non loggato
+  categorySlug String   // es. "casali", "ville"
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+}
+
+// ─── CRM ──────────────────────────────────────────────────────────────────────
+
+model CrmLead {
+  id        String   @id @default(cuid())
+  userId    String
+  firstName String?
+  lastName  String?
+  email     String
+  mobile    String?
+  homePhone String?
+  workPhone String?
+  address   String?
+  city      String?
+  country   String?
+  source    String?
+  status    String?  @default("new")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User          @relation(fields: [userId], references: [id])
+  notes      CrmNote[]
+  deals      CrmDeal[]
+  enquiries  CrmEnquiry[]
+  activities CrmActivity[]
+}
+
+model CrmDeal {
+  id            String    @id @default(cuid())
+  userId        String
+  title         String?
+  group         String?
+  listingId     String?
+  leadId        String?
+  agentId       String?
+  status        String?   @default("open")
+  dealValue     Decimal?
+  nextAction    String?
+  actionDueDate DateTime?
+  createdAt     DateTime  @default(now())
+
+  property Property? @relation(fields: [listingId], references: [id])
+  lead     CrmLead?  @relation(fields: [leadId], references: [id])
+  notes    CrmNote[]
+}
+
+model CrmEnquiry {
+  id          String   @id @default(cuid())
+  userId      String
+  leadId      String?
+  listingId   String?
+  message     String?
+  status      String?  @default("new")
+  enquiryType String?
+  meta        Json?
+  createdAt   DateTime @default(now())
+
+  property Property? @relation(fields: [listingId], references: [id])
+  lead     CrmLead?  @relation(fields: [leadId], references: [id])
+}
+
+model CrmNote {
+  id        String   @id @default(cuid())
+  userId    String
+  leadId    String?
+  dealId    String?
+  note      String?
+  type      String?
+  createdAt DateTime @default(now())
+
+  lead CrmLead? @relation(fields: [leadId], references: [id])
+  deal CrmDeal? @relation(fields: [dealId], references: [id])
+}
+
+model CrmActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  leadId    String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  lead CrmLead? @relation(fields: [leadId], references: [id])
+}
+
+// ─── MESSAGGISTICA ────────────────────────────────────────────────────────────
+
+model Thread {
+  id              String   @id @default(cuid())
+  senderId        String
+  receiverId      String
+  propertyId      String?
+  seen            Boolean  @default(false)
+  receiverDeleted Boolean  @default(false)
+  senderDeleted   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  sender   User      @relation("SentThreads", fields: [senderId], references: [id])
+  receiver User      @relation("ReceivedThreads", fields: [receiverId], references: [id])
+  messages Message[]
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  threadId        String
+  createdById     String
+  message         String
+  attachments     Json?    // solo JPEG/JPG/PNG/WebP/PDF su R2
+  receiverDeleted Boolean  @default(false)
+  senderDeleted   Boolean  @default(false)
+  isRead          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  thread    Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  createdBy User   @relation(fields: [createdById], references: [id])
+}
+
+// ─── PAGAMENTI ────────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  stripeCustomerId  String?
+  stripeSubId       String?
+  plan              SubscriptionPlan
+  status            SubscriptionStatus
+  billingCycle      BillingCycle       @default(MONTHLY)
+  basePrice         Decimal
+  badgeAddon        Boolean            @default(false)
+  featuredCount     Int                @default(0)
+  totalPrice        Decimal
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  user             User               @relation(fields: [userId], references: [id])
+  invoices         Invoice[]
+  agentBadges      AgentBadgeAddon[]
+  featuredListings FeaturedListing[]
+}
+
+model AgentBadgeAddon {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  agentId        String
+  price          Decimal      @default(4.90)
+  isActive       Boolean      @default(true)
+  startDate      DateTime     @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+model FeaturedListing {
+  id             String       @id @default(cuid())
+  subscriptionId String?
+  propertyId     String
+  userId         String
+  price          Decimal      @default(7.90)
+  isActive       Boolean      @default(true)
+  startDate      DateTime     @default(now())
+  endDate        DateTime?    // null = fino a vendita
+
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+}
+
+model Invoice {
+  id              String       @id @default(cuid())
+  subscriptionId  String
+  stripeInvoiceId String?
+  amount          Decimal
+  currency        String       @default("EUR")
+  status          String
+  pdfUrl          String?
+  paidAt          DateTime?
+  createdAt       DateTime     @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+
+model Insight {
+  id               String   @id @default(cuid())
+  listingId        String
+  time             DateTime @default(now())
+  ipAddress        String?
+  uniqueIdentifier String
+  referralUrl      String?
+  referralDomain   String?
+  platform         String?
+  device           String?
+  browser          String?
+  language         String?
+  countryCode      String?
+  country          String?
+
+  property Property @relation(fields: [listingId], references: [id])
+}
+
+// ─── REVIEWS ──────────────────────────────────────────────────────────────────
+
+model Review {
+  id         String   @id @default(cuid())
+  targetId   String
+  targetType String   // 'property' | 'agent' | 'agency'
+  authorId   String
+  title      String
+  body       String
+  rating     Int
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  author   User      @relation(fields: [authorId], references: [id])
+  property Property? @relation(fields: [targetId], references: [id])
+}
+
+// ─── SAVED ────────────────────────────────────────────────────────────────────
+
+model SavedProperty {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@unique([userId, propertyId])
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  filters   Json
+  centerLat Decimal? // per calcolo raggio 30km
+  centerLng Decimal?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
