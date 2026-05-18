@@ -48,6 +48,12 @@ export class MessagingService {
     }
   }
 
+  logViolation(userId: string, content: string, reason: string): void {
+    this.prisma.messageViolation
+      .create({ data: { userId, content: content.slice(0, 500), reason } })
+      .catch(() => {});
+  }
+
   // ── Thread operations ───────────────────────────────────────────────────────
 
   async getOrCreateThread(senderId: string, receiverId: string, propertyId?: string) {

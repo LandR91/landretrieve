@@ -10,6 +10,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { PropertiesModule } from "./properties/properties.module";
 import { CrmModule } from "./crm/crm.module";
 import { PaymentsModule } from "./payments/payments.module";
+import { AdminModule } from "./admin/admin.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PaymentsModule } from "./payments/payments.module";
     PropertiesModule,
     CrmModule,
     PaymentsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

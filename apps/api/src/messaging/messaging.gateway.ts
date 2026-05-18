@@ -118,12 +118,16 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   ) {
     const { userId } = client.data;
 
-    // Content validation
+    // Content validation — log violations for admin moderation
     try {
       this.messagingService.validateMessage(payload.message);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Messaggio non valido.";
-      throw new WsException(message);
+      const msg = err instanceof Error ? err.message : "Messaggio non valido.";
+      const reason = this.messagingService.hasExternalLinks(payload.message)
+        ? "external_link"
+        : "profanity";
+      this.messagingService.logViolation(userId, payload.message, reason);
+      throw new WsException(msg);
     }
 
     // Persist

@@ -109,6 +109,7 @@ model User {
   receivedOffers   PropertyOffer[]  @relation("ReceivedOffers")
   propertyRequests PropertyRequest[]
   categoryViews    CategoryView[]
+  violations       MessageViolation[]
 }
 
 // ─── AGENCY PROFILE ───────────────────────────────────────────────────────────
@@ -599,4 +600,16 @@ model SavedSearch {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+// ─── MODERATION ───────────────────────────────────────────────────────────────
+
+model MessageViolation {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String
+  reason    String   // "profanity" | "external_link"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
