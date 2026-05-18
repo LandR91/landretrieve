@@ -8,6 +8,7 @@ import { OffersModule } from "./offers/offers.module";
 import { PropertyRequestsModule } from "./property-requests/property-requests.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { PropertiesModule } from "./properties/properties.module";
+import { CrmModule } from "./crm/crm.module";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { PropertiesModule } from "./properties/properties.module";
     PropertyRequestsModule,
     NotificationsModule,
     PropertiesModule,
+    CrmModule,
   ],
 })
 export class AppModule {}
