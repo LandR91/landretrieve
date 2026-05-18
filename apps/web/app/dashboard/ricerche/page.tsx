@@ -9,6 +9,7 @@ import { COMUNI } from "@/lib/istat";
 const GREEN = "#26A55B";
 const GREEN_DARK = "#1d8a4b";
 const GREEN_LIGHT = "#e8f7ef";
+const GREEN_XLIGHT = "#f0fbf5";
 const TEXT = "#111111";
 const TEXT_SOFT = "#374151";
 const BORDER = "#D4D4D4";
@@ -111,20 +112,20 @@ function ComuniSelect({ selected, onChange, error }: {
 
   const results = query.trim().length >= 1
     ? COMUNI.filter((c) =>
-        c.nome.toLowerCase().includes(query.toLowerCase()) &&
-        !selected.includes(`${c.nome} (${c.provincia})`)
+        (c.nome.toLowerCase().includes(query.toLowerCase()) ||
+          c.provincia.toLowerCase().includes(query.toLowerCase())) &&
+        !selected.includes(c.nome)
       ).slice(0, 8)
     : [];
 
-  function add(nome: string, provincia: string) {
-    const label = `${nome} (${provincia})`;
-    if (!selected.includes(label)) onChange([...selected, label]);
+  function add(nome: string) {
+    if (!selected.includes(nome)) onChange([...selected, nome]);
     setQuery("");
     setOpen(false);
   }
 
-  function remove(label: string) {
-    onChange(selected.filter((s) => s !== label));
+  function remove(nome: string) {
+    onChange(selected.filter((s) => s !== nome));
   }
 
   return (
@@ -150,7 +151,7 @@ function ComuniSelect({ selected, onChange, error }: {
             <button
               key={`${c.nome}-${c.provincia}`}
               type="button"
-              onMouseDown={() => add(c.nome, c.provincia)}
+              onMouseDown={() => add(c.nome)}
               style={{ display: "block", width: "100%", textAlign: "left", padding: ".5rem .75rem", fontSize: ".83rem", color: TEXT, background: "transparent", border: "none", cursor: "pointer" }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f5f5f5")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
@@ -246,8 +247,9 @@ export default function CercaImmobilePage() {
   const { data: session, status } = useSession();
   const user = session?.user as {
     id?: string; firstName?: string; lastName?: string; email?: string;
-    phone?: string; avatar?: string; accessToken?: string; role?: string;
+    phone?: string; avatar?: string; role?: string;
   } | undefined;
+  const token = (session as { accessToken?: string } | null)?.accessToken ?? "";
 
   const [form, setForm] = useState<FormState>({ liveCountry: "", liveCity: "", priceMin: "", priceMax: "", message: "", privacy: false });
   const [selectedComuni, setSelectedComuni] = useState<string[]>([]);
@@ -259,8 +261,6 @@ export default function CercaImmobilePage() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [requests, setRequests] = useState<PropertyRequest[]>([]);
   const [requestsLoaded, setRequestsLoaded] = useState(false);
-
-  const token = user?.accessToken ?? "";
 
   const fetchRequests = useCallback(async () => {
     if (!token) return;
@@ -386,15 +386,17 @@ export default function CercaImmobilePage() {
 
       {/* ── Success state ─────────────────────────────────────────────────── */}
       {success ? (
-        <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "2rem 1.5rem", textAlign: "center" }}>
+        <div style={{ background: GREEN_XLIGHT, border: `1px solid ${GREEN}`, borderRadius: 10, padding: "2rem 1.5rem", textAlign: "center" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: ".6rem" }}>✅</div>
-          <p style={{ fontWeight: 700, color: TEXT, margin: "0 0 .35rem" }}>Richiesta inviata!</p>
-          <p style={{ fontSize: ".85rem", color: MUTED, margin: "0 0 1.25rem", lineHeight: 1.6 }}>
-            I professionisti con immobili attivi nella zona richiesta riceveranno una notifica via email.
+          <p style={{ fontWeight: 700, color: GREEN_DARK, margin: "0 0 .35rem" }}>Richiesta inviata!</p>
+          <p style={{ fontSize: ".85rem", color: TEXT_SOFT, margin: "0 0 1.25rem", lineHeight: 1.6 }}>
+            I professionisti pertinenti riceveranno una notifica.
           </p>
           <button
             onClick={resetForm}
-            style={{ fontSize: ".83rem", color: MUTED, background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}
+            style={{ padding: ".6rem 1.4rem", background: GREEN, color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: ".88rem", cursor: "pointer" }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = GREEN_DARK)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = GREEN)}
           >
             Invia un&apos;altra richiesta
           </button>
