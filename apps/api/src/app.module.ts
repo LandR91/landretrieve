@@ -9,6 +9,7 @@ import { PropertyRequestsModule } from "./property-requests/property-requests.mo
 import { NotificationsModule } from "./notifications/notifications.module";
 import { PropertiesModule } from "./properties/properties.module";
 import { CrmModule } from "./crm/crm.module";
+import { PaymentsModule } from "./payments/payments.module";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { CrmModule } from "./crm/crm.module";
     NotificationsModule,
     PropertiesModule,
     CrmModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

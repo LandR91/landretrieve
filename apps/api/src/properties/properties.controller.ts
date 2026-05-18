@@ -20,4 +20,9 @@ export class PropertiesController {
   unpublishProperty(@Param("id") id: string, @Request() req: AuthRequest) {
     return this.propertiesService.unpublishProperty(id, req.user.id);
   }
+
+  @Patch(":id/sell")
+  sellProperty(@Param("id") id: string, @Request() req: AuthRequest) {
+    return this.propertiesService.sellProperty(id, req.user.id);
+  }
 }
