@@ -82,6 +82,10 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     return (this.onlineUsers.get(userId)?.size ?? 0) > 0;
   }
 
+  sendToUser(userId: string, event: string, data: unknown): void {
+    this.server.to(`user:${userId}`).emit(event, data);
+  }
+
   // ── Events ─────────────────────────────────────────────────────────────────
 
   @SubscribeMessage("join_thread")

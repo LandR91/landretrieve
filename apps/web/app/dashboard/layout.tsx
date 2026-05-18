@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { DashSidebar } from "@/components/dashboard/DashSidebar";
 import { useState, useRef, useEffect } from "react";
 import { User } from "lucide-react";
+import { useNewListingNotification } from "@/hooks/use-new-listing-notification";
+import { NewListingToast } from "@/components/notifications/NewListingToast";
 
 function DashTopbar() {
   const { user } = useAuth();
@@ -155,6 +157,12 @@ function DashTopbar() {
   );
 }
 
+function NewListingNotifier() {
+  const { notification, dismiss } = useNewListingNotification();
+  if (!notification) return null;
+  return <NewListingToast notification={notification} onDismiss={dismiss} />;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
@@ -172,6 +180,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+      <NewListingNotifier />
     </div>
   );
 }

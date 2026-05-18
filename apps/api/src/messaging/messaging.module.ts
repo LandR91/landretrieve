@@ -31,6 +31,6 @@ import { PrismaModule } from "../prisma/prisma.module";
   ],
   providers: [MessagingGateway, MessagingService, MessagingProcessor],
   controllers: [MessagingController],
-  exports: [MessagingService],
+  exports: [MessagingService, MessagingGateway],
 })
 export class MessagingModule {}
