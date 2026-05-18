@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 const GREEN = "#26A55B";
 const TEXT = "#111111";
@@ -115,6 +117,14 @@ const MOCK_LISTINGS = [
   { id: "3", title: "Terreno agricolo 5 ha", prezzo: "€ 95.000", tipo: "Terreno", comune: "Montepulciano", mq: 50000, ipp: false },
 ];
 
+type PortfolioData = {
+  profileId: string;
+  byType: DonutSegment[];
+  byListingType: DonutSegment[];
+  byComune: DonutSegment[];
+  total: number;
+} | null;
+
 type Tab = "annunci" | "recensioni";
 
 export default function AgentProfilePage() {
@@ -122,6 +132,23 @@ export default function AgentProfilePage() {
   const slug = params?.slug as string;
   const agent = MOCK_AGENTS[slug] ?? MOCK_AGENTS["default"];
   const [tab, setTab] = useState<Tab>("annunci");
+  const [portfolio, setPortfolio] = useState<PortfolioData>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    // Fetch real portfolio data for donut charts
+    fetch(`${API_URL}/api/stats/portfolio?profileType=agent&slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: PortfolioData | null) => { if (d) setPortfolio(d); })
+      .catch(() => {});
+
+    // Record profile view (fire-and-forget)
+    fetch(`${API_URL}/api/stats/profile-view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, profileType: "agent" }),
+    }).catch(() => {});
+  }, [slug]);
 
   return (
     <>
@@ -224,13 +251,16 @@ export default function AgentProfilePage() {
 
               {/* 3 Donut Charts */}
               <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${BORDER}`, padding: "1.5rem", marginBottom: "1.5rem" }}>
-                <h3 style={{ fontSize: ".85rem", fontWeight: 700, color: TEXT, margin: "0 0 1.25rem" }}>Portfolio — distribuzione</h3>
+                <h3 style={{ fontSize: ".85rem", fontWeight: 700, color: TEXT, margin: "0 0 1.25rem" }}>
+                  Portfolio — distribuzione
+                  {portfolio && <span style={{ fontSize: ".75rem", fontWeight: 400, color: "#5a5a5a", marginLeft: ".5rem" }}>({portfolio.total} annunci)</span>}
+                </h3>
                 <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                  <DonutChart title="Tipologie" segments={agent.chartTipo} />
+                  <DonutChart title="Tipologie" segments={portfolio?.byType ?? agent.chartTipo} />
                   <div style={{ width: 1, background: BORDER, flexShrink: 0 }} className="chart-divider" />
-                  <DonutChart title="Stato" segments={agent.chartStato} />
+                  <DonutChart title="Stato" segments={portfolio?.byListingType ?? agent.chartStato} />
                   <div style={{ width: 1, background: BORDER, flexShrink: 0 }} className="chart-divider" />
-                  <DonutChart title="Comuni" segments={agent.chartComuni} />
+                  <DonutChart title="Comuni" segments={portfolio?.byComune ?? agent.chartComuni} />
                 </div>
               </div>
 

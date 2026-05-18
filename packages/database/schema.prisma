@@ -602,6 +602,16 @@ model SavedSearch {
   user User @relation(fields: [userId], references: [id])
 }
 
+// ─── ANALYTICS — PROFILE VIEWS ───────────────────────────────────────────────
+
+model ProfileView {
+  id          String   @id @default(cuid())
+  profileId   String   // agentProfile.id or agencyProfile.id
+  profileType String   // "agent" | "agency"
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+}
+
 // ─── MODERATION ───────────────────────────────────────────────────────────────
 
 model MessageViolation {

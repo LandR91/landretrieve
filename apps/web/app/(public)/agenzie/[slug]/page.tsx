@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 const GREEN = "#26A55B";
 const TEXT = "#111111";
@@ -125,11 +127,34 @@ const MOCK_LISTINGS = [
 
 type Tab = "annunci" | "agenti" | "recensioni";
 
+type PortfolioData = {
+  profileId: string;
+  byType: DonutSegment[];
+  byListingType: DonutSegment[];
+  byComune: DonutSegment[];
+  total: number;
+} | null;
+
 export default function AgenziaProfilePage() {
   const params = useParams();
   const slug = params?.slug as string;
   const agency = MOCK_AGENCIES[slug] ?? MOCK_AGENCIES["default"];
   const [tab, setTab] = useState<Tab>("annunci");
+  const [portfolio, setPortfolio] = useState<PortfolioData>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    fetch(`${API_URL}/api/stats/portfolio?profileType=agency&slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: PortfolioData | null) => { if (d) setPortfolio(d); })
+      .catch(() => {});
+
+    fetch(`${API_URL}/api/stats/profile-view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, profileType: "agency" }),
+    }).catch(() => {});
+  }, [slug]);
 
   return (
     <>
@@ -225,13 +250,16 @@ export default function AgenziaProfilePage() {
 
               {/* 3 Donut Charts */}
               <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${BORDER}`, padding: "1.5rem", marginBottom: "1.5rem" }}>
-                <h3 style={{ fontSize: ".85rem", fontWeight: 700, color: TEXT, margin: "0 0 1.25rem" }}>Portfolio — distribuzione</h3>
+                <h3 style={{ fontSize: ".85rem", fontWeight: 700, color: TEXT, margin: "0 0 1.25rem" }}>
+                  Portfolio — distribuzione
+                  {portfolio && <span style={{ fontSize: ".75rem", fontWeight: 400, color: "#5a5a5a", marginLeft: ".5rem" }}>({portfolio.total} annunci)</span>}
+                </h3>
                 <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                  <DonutChart title="Tipologie" segments={agency.chartTipo} />
+                  <DonutChart title="Tipologie" segments={portfolio?.byType ?? agency.chartTipo} />
                   <div style={{ width: 1, background: BORDER, flexShrink: 0 }} className="chart-divider" />
-                  <DonutChart title="Stato" segments={agency.chartStato} />
+                  <DonutChart title="Stato" segments={portfolio?.byListingType ?? agency.chartStato} />
                   <div style={{ width: 1, background: BORDER, flexShrink: 0 }} className="chart-divider" />
-                  <DonutChart title="Comuni" segments={agency.chartComuni} />
+                  <DonutChart title="Comuni" segments={portfolio?.byComune ?? agency.chartComuni} />
                 </div>
               </div>
 
