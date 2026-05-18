@@ -25,7 +25,7 @@ function useNavItems(): NavItem[] {
       { type: "link", label: "Dashboard", href: "/dashboard" },
       { type: "link", label: "Attività", href: "/dashboard/attivita" },
       { type: "link", label: "Preferiti", href: "/dashboard/preferiti" },
-      { type: "link", label: "Ricerche salvate", href: "/dashboard/ricerche" },
+      { type: "link", label: "Cerca Immobile", href: "/dashboard/ricerche" },
       { type: "link", label: "Messaggi", href: "/dashboard/messaggi" },
       { type: "link", label: "Le mie offerte", href: "/dashboard/offerte" },
       { type: "separator" },
