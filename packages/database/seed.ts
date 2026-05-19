@@ -7,10 +7,10 @@ async function main() {
   console.log("🌱 Avvio seed LandRetrieve...");
 
   // ─── 1. ADMIN ────────────────────────────────────────────────────────────
-  const adminPassword = await bcrypt.hash("Admin@LandR2025!", 12);
+  const adminPassword = await bcrypt.hash("Admin2024!", 12);
   const admin = await prisma.user.upsert({
     where: { email: "admin@landretrieve.com" },
-    update: {},
+    update: { password: adminPassword },
     create: {
       username: "admin",
       email: "admin@landretrieve.com",
@@ -457,13 +457,103 @@ async function main() {
     console.log(`✅ Immobile creato: ${prop.title}`);
   }
 
+  // ─── 5. ACCOUNT TEST SEMPLICI ────────────────────────────────────────────
+  const testPwd = await bcrypt.hash("Test2024!", 12);
+
+  // Agenzia test
+  const agenziaUser = await prisma.user.upsert({
+    where: { email: "agenzia@test.com" },
+    update: { password: testPwd },
+    create: {
+      username: "agenzia-test",
+      email: "agenzia@test.com",
+      password: testPwd,
+      role: UserRole.AGENCY,
+      isVerified: true,
+      isActive: true,
+    },
+  });
+  await prisma.agencyProfile.upsert({
+    where: { userId: agenziaUser.id },
+    update: {},
+    create: {
+      userId: agenziaUser.id,
+      name: "Agenzia Test",
+      slug: "agenzia-test",
+      taxNumber: "IT11111111111",
+      licenses: "TEST-001",
+      phone: "+39 000 1234567",
+      email: "agenzia@test.com",
+      bio: "Account test per sviluppo locale.",
+      isVerified: true,
+      isVisible: true,
+    },
+  });
+  console.log("✅ Agenzia test: agenzia@test.com / Test2024!");
+
+  // Agente test
+  const agenteUser = await prisma.user.upsert({
+    where: { email: "agente@test.com" },
+    update: { password: testPwd },
+    create: {
+      username: "agente-test",
+      email: "agente@test.com",
+      password: testPwd,
+      role: UserRole.AGENT,
+      title: "SIG",
+      firstName: "Test",
+      lastName: "Agente",
+      displayName: "Agente Test",
+      isVerified: true,
+      isActive: true,
+    },
+  });
+  await prisma.agentProfile.upsert({
+    where: { userId: agenteUser.id },
+    update: {},
+    create: {
+      userId: agenteUser.id,
+      slug: "agente-test",
+      position: "Agente Test",
+      license: "TEST-A001",
+      taxNumber: "TSTAGT85T20H501Z",
+      mobile: "+39 000 9876543",
+      email: "agente@test.com",
+      bio: "Account test per sviluppo locale.",
+      isVerified: true,
+      isVisible: true,
+    },
+  });
+  console.log("✅ Agente test: agente@test.com / Test2024!");
+
+  // Visitatore test
+  await prisma.user.upsert({
+    where: { email: "visitatore@test.com" },
+    update: { password: testPwd },
+    create: {
+      username: "visitatore-test",
+      email: "visitatore@test.com",
+      password: testPwd,
+      role: UserRole.VISITOR,
+      firstName: "Test",
+      lastName: "Visitatore",
+      displayName: "Visitatore Test",
+      isVerified: false,
+      isActive: true,
+    },
+  });
+  console.log("✅ Visitatore test: visitatore@test.com / Test2024!");
+
   console.log("\n🎉 Seed completato con successo!");
   console.log("─────────────────────────────────────");
   console.log("Credenziali test:");
-  console.log("  Admin:   admin@landretrieve.com / Admin@LandR2025!");
-  console.log("  Agenzia 1: info@tuscanyestates.it / Agency1@Test!");
-  console.log("  Agenzia 2: contact@ruralitalyhomes.com / Agency2@Test!");
-  console.log("  Agenti: [email] / Agent@Test123!");
+  console.log("  Admin:       admin@landretrieve.com        / Admin2024!");
+  console.log("  Agenzia:     agenzia@test.com              / Test2024!");
+  console.log("  Agente:      agente@test.com               / Test2024!");
+  console.log("  Visitatore:  visitatore@test.com           / Test2024!");
+  console.log("  Agenzia 1:   info@tuscanyestates.it        / Agency1@Test!");
+  console.log("  Agenzia 2:   contact@ruralitalyhomes.com   / Agency2@Test!");
+  console.log("  Agenti demo: [email] @ tuscanyestates.it   / Agent@Test123!");
 }
 
 main()
