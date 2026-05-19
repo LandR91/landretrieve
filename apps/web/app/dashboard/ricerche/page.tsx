@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { COMUNI } from "@/lib/istat";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const GREEN = "#26A55B";
@@ -245,6 +246,7 @@ function TipologieSelect({ selected, onChange, error }: {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function CercaImmobilePage() {
   const { data: session, status } = useSession();
+  const { getToken } = useRecaptcha();
   const user = session?.user as {
     id?: string; firstName?: string; lastName?: string; email?: string;
     phone?: string; avatar?: string; role?: string;
@@ -332,6 +334,7 @@ export default function CercaImmobilePage() {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
     setApiError(null);
+    const recaptchaToken = await getToken("property_request");
     try {
       const res = await fetch(`${API_URL}/api/property-requests`, {
         method: "POST",
@@ -350,6 +353,7 @@ export default function CercaImmobilePage() {
           priceMax: form.priceMax ? Number(form.priceMax) : undefined,
           message: form.message || undefined,
           privacyAccepted: form.privacy,
+          recaptchaToken,
         }),
       });
       if (!res.ok) {

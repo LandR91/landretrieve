@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 
 const GREEN = "#26A55B";
 const TEXT = "#111111";
@@ -18,6 +19,7 @@ const CHI_SONO_OPTIONS = [
 ];
 
 export default function ContattiPage() {
+  const { getToken } = useRecaptcha();
   const [form, setForm] = useState({
     nome: "", tel: "", email: "", chiSono: "", messaggio: "", privacy: false,
   });
@@ -42,11 +44,12 @@ export default function ContattiPage() {
     return e;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
+    await getToken("contact");
     // Simulates API call — in production creates a Thread in DB (no email sent)
     setTimeout(() => { setLoading(false); setSent(true); }, 800);
   }

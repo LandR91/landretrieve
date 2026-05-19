@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 
 const DEMO_ACCOUNTS = [
   { label: "Admin", email: "admin@landretrieve.com", password: "Admin@LandR2025!" },
@@ -14,6 +15,7 @@ const DEMO_ACCOUNTS = [
 
 export default function LoginPage() {
   const router = useRouter();
+  const { getToken } = useRecaptcha();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -24,6 +26,7 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    await getToken("login");
     const res = await signIn("credentials", {
       email,
       password,

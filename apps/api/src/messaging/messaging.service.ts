@@ -7,15 +7,34 @@ import { PrismaService } from "../prisma/prisma.service";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const BadWordsFilter = require("bad-words");
 
-// Matches any http/https URL that is NOT landretrieve.com
-const EXTERNAL_LINK_RE = /https?:\/\/(?!(?:www\.)?landretrieve\.com)[^\s<>"']+/gi;
+// Additional profanity words for IT / ES / FR / DE
+const EXTRA_WORDS = [
+  // Italian
+  "cazzo","cagna","puttana","figa","vaffanculo","stronzo","minchia","fanculo",
+  "bastardo","troia","zoccola","mignotta","porco","coglione","cornuto","fica",
+  // Spanish
+  "puta","coño","mierda","joder","hostia","gilipollas","cabron","follar","polla",
+  "chinga","pendejo","verga","culero","mamón",
+  // French
+  "merde","putain","connard","salope","foutre","bordel","enculer","connasse",
+  "bite","chier","nique",
+  // German
+  "scheiße","hurensohn","wichser","arschloch","fick","schlampe","scheisse",
+  "fotze","kacke","dummkopf",
+];
+
+// Fresh regex per call to avoid lastIndex drift with the `g` flag
+function makeExternalLinkRe(): RegExp {
+  // Catches: http(s)// not landretrieve.com | www.* not landretrieve | wa.me | t.me | bit.ly
+  return /(?:https?:\/\/(?!(?:www\.)?landretrieve\.com)|www\.(?!landretrieve\.com)\w|(?:wa|t)\.me\/|bit\.ly\/)[^\s<>"']*/i;
+}
 
 @Injectable()
 export class MessagingService {
   private profanityFilter: { isProfane: (s: string) => boolean };
 
   constructor(private prisma: PrismaService) {
-    this.profanityFilter = new BadWordsFilter();
+    this.profanityFilter = new BadWordsFilter({ list: EXTRA_WORDS });
   }
 
   // ── Content guards ──────────────────────────────────────────────────────────
@@ -29,7 +48,7 @@ export class MessagingService {
   }
 
   hasExternalLinks(text: string): boolean {
-    return EXTERNAL_LINK_RE.test(text);
+    return makeExternalLinkRe().test(text);
   }
 
   validateMessage(text: string): void {

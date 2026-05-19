@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Eye, EyeOff, Loader2, Search, Building2, Handshake, ChevronLeft, Plus, Minus } from "lucide-react";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 
 type RoleType = "VISITOR" | "AGENCY" | "AGENT" | null;
 type BillingCycle = "MONTHLY" | "YEARLY";
@@ -207,6 +208,7 @@ function PlanBlock({
 
 export default function RegistratiPage() {
   const router = useRouter();
+  const { getToken } = useRecaptcha();
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<RoleType>(null);
   const [loading, setLoading] = useState(false);
@@ -266,6 +268,8 @@ export default function RegistratiPage() {
     setLoading(true);
 
     try {
+      const recaptchaToken = await getToken("register");
+
       const endpoint =
         role === "VISITOR"
           ? "/api/auth/register/visitor"
@@ -277,8 +281,8 @@ export default function RegistratiPage() {
         role === "VISITOR"
           ? { title, firstName, lastName, country, email, phone, password, confirmPassword }
           : role === "AGENCY"
-            ? { agencyName, country, email, phone, taxNumber, license, password, confirmPassword, plan, billingCycle, badgeAddon: badge, featuredCount: featured }
-            : { title, firstName, lastName, country, email, phone, taxNumber, license, password, confirmPassword, plan, billingCycle, badgeAddon: badge, featuredCount: featured };
+            ? { agencyName, country, email, phone, taxNumber, license, password, confirmPassword, plan, billingCycle, badgeAddon: badge, featuredCount: featured, recaptchaToken }
+            : { title, firstName, lastName, country, email, phone, taxNumber, license, password, confirmPassword, plan, billingCycle, badgeAddon: badge, featuredCount: featured, recaptchaToken };
 
       const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
       const res = await fetch(`${API}${endpoint}`, {
