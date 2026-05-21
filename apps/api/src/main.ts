@@ -26,7 +26,7 @@ async function bootstrap() {
 
   const port = process.env.API_PORT ?? 4000;
   await app.listen(port);
-  console.log(`🚀 LandRetrieve API running on http://localhost:${port}/api`);
+  console.log(`[OK] LandRetrieve API running on http://localhost:${port}/api`);
 }
 
 bootstrap();

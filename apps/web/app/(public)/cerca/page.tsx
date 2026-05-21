@@ -32,7 +32,7 @@ import { useCompareStore, type CompareItem } from "@/store/compare.store";
 // Constants
 // =============================================================================
 
-const MAPS_KEY = "AIzaSyCXU5OQRShbztd7a-A5_LFwmVkwOdaOYnk";
+const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
 const GREEN = "#26A55B";
 const TEXT = "#111111";
 const BG = "#f5f5f5";
@@ -1353,7 +1353,6 @@ export default function CercaPage() {
   const [params, setParams] = useState<SearchParams>(DEFAULT_PARAMS);
   const [committedParams, setCommittedParams] = useState<SearchParams>(DEFAULT_PARAMS);
   const [showFilters, setShowFilters] = useState(false);
-  const [filterHeight, setFilterHeight] = useState(0);
   const filtersRef = useRef<HTMLDivElement>(null);
 
   // Results
@@ -1461,13 +1460,6 @@ export default function CercaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView]);
 
-  // Filter panel height for map offset
-  useEffect(() => {
-    if (filtersRef.current) {
-      setFilterHeight(showFilters ? filtersRef.current.offsetHeight : 0);
-    }
-  }, [showFilters]);
-
   // ---------------------------------------------------------------------------
   // Event handlers
   // ---------------------------------------------------------------------------
@@ -1504,50 +1496,20 @@ export default function CercaPage() {
     fetchResults(committedParams, 1, bounds, false);
   }
 
-  const stickyTop = SEARCH_BAR_HEIGHT + filterHeight;
-  const mapHeight = `calc(100vh - ${stickyTop}px)`;
   const compareBarOffset = compareItems.length > 0 ? 80 : 0;
 
   return (
-    <div style={{ backgroundColor: BG, minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
-      {/* Search bar */}
-      <SearchBar
-        params={params}
-        onParamsChange={handleParamsChange}
-        onSearch={handleSearch}
-        showFilters={showFilters}
-        onToggleFilters={() => setShowFilters((v) => !v)}
-      />
+    <div style={{ backgroundColor: BG, fontFamily: "Inter, sans-serif" }}>
+      {/* Split layout: Map (50%) left + Search+Results (50%) right — fills viewport below navbar */}
+      <div style={{ display: "flex", height: "calc(100vh - 72px)", overflow: "hidden" }}>
 
-      {/* Advanced filters */}
-      {showFilters && (
-        <div ref={filtersRef}>
-          <AdvancedFilters
-            params={params}
-            onParamsChange={handleParamsChange}
-            onApply={handleApplyFilters}
-            onReset={handleResetFilters}
-          />
-        </div>
-      )}
-
-      {/* Main content: Map + Results */}
-      <div style={{ display: "flex", height: mapHeight, overflow: "hidden" }}>
-        {/* MAP — left 40% */}
-        <div
-          style={{
-            width: "40%",
-            position: "sticky",
-            top: stickyTop,
-            height: mapHeight,
-            flexShrink: 0,
-          }}
-        >
+        {/* MAP — left 50% */}
+        <div style={{ width: "50%", flexShrink: 0, height: "100%" }}>
           <APIProvider apiKey={MAPS_KEY}>
             <GoogleMap
               defaultCenter={{ lat: 42.5, lng: 12.5 }}
               defaultZoom={6}
-              mapId="landretrieve-map"
+              mapId="DEMO_MAP_ID"
               style={{ width: "100%", height: "100%" }}
               gestureHandling="greedy"
             >
@@ -1561,97 +1523,129 @@ export default function CercaPage() {
           </APIProvider>
         </div>
 
-        {/* RESULTS — right 60% */}
+        {/* RIGHT COLUMN — 50%: search bar + filters + scrollable results */}
         <div
           style={{
-            flex: 1,
-            overflowY: "auto",
-            paddingBottom: compareBarOffset + 16,
+            width: "50%",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            overflow: "hidden",
           }}
         >
-          {/* Toolbar */}
-          <div
-            style={{
-              position: "sticky",
-              top: 0,
-              zIndex: 10,
-              backgroundColor: BG,
-              borderBottom: `1px solid ${BORDER}`,
-              padding: "10px 16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-            }}
-          >
-            <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
-              {total} annunci trovati
-            </span>
-            <span style={{ fontSize: 12, color: "#888" }}>
-              Ordinamento: Agenzie/Agenti con badge · più visitati
-            </span>
-          </div>
+          {/* Search bar */}
+          <SearchBar
+            params={params}
+            onParamsChange={handleParamsChange}
+            onSearch={handleSearch}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters((v) => !v)}
+          />
 
-          {/* Cards grid */}
-          <div
-            style={{
-              padding: 16,
-              display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 16,
-            }}
-          >
-            {results.map((prop) => (
-              <PropertyCard
-                key={prop.id}
-                property={prop}
-                onHighlight={setHighlightedId}
-                isHighlighted={highlightedId === prop.id}
-                cardRef={(el) => {
-                  if (el) cardRefs.current.set(prop.id, el);
-                  else cardRefs.current.delete(prop.id);
-                }}
+          {/* Advanced filters */}
+          {showFilters && (
+            <div ref={filtersRef}>
+              <AdvancedFilters
+                params={params}
+                onParamsChange={handleParamsChange}
+                onApply={handleApplyFilters}
+                onReset={handleResetFilters}
               />
-            ))}
-          </div>
+            </div>
+          )}
 
-          {/* Empty state */}
-          {!loading && results.length === 0 && (
+          {/* Scrollable results */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              paddingBottom: compareBarOffset + 16,
+            }}
+          >
+            {/* Toolbar */}
             <div
               style={{
-                textAlign: "center",
-                padding: "60px 24px",
-                color: "#888",
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                backgroundColor: BG,
+                borderBottom: `1px solid ${BORDER}`,
+                padding: "10px 16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
               }}
             >
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-              <div style={{ fontSize: 18, fontWeight: 600, color: LABELS, marginBottom: 8 }}>
-                Nessun risultato trovato
-              </div>
-              <div style={{ fontSize: 14 }}>
-                Prova a modificare i filtri di ricerca
-              </div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: TEXT }}>
+                {total} annunci trovati
+              </span>
+              <span style={{ fontSize: 12, color: "#888" }}>
+                Ordinamento: Agenzie/Agenti con badge · più visitati
+              </span>
             </div>
-          )}
 
-          {/* Loading spinner */}
-          {loading && (
-            <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+            {/* Cards grid */}
+            <div
+              style={{
+                padding: 16,
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 16,
+              }}
+            >
+              {results.map((prop) => (
+                <PropertyCard
+                  key={prop.id}
+                  property={prop}
+                  onHighlight={setHighlightedId}
+                  isHighlighted={highlightedId === prop.id}
+                  cardRef={(el) => {
+                    if (el) cardRefs.current.set(prop.id, el);
+                    else cardRefs.current.delete(prop.id);
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Empty state */}
+            {!loading && results.length === 0 && (
               <div
                 style={{
-                  width: 36,
-                  height: 36,
-                  border: `3px solid ${BORDER}`,
-                  borderTopColor: GREEN,
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
+                  textAlign: "center",
+                  padding: "60px 24px",
+                  color: "#888",
                 }}
-              />
-            </div>
-          )}
+              >
+                <div style={{ fontSize: 48, marginBottom: 16 }}>&#128269;</div>
+                <div style={{ fontSize: 18, fontWeight: 600, color: LABELS, marginBottom: 8 }}>
+                  Nessun risultato trovato
+                </div>
+                <div style={{ fontSize: 14 }}>
+                  Prova a modificare i filtri di ricerca
+                </div>
+              </div>
+            )}
 
-          {/* Infinite scroll sentinel */}
-          <div ref={sentinelRef} style={{ height: 1 }} />
+            {/* Loading spinner */}
+            {loading && (
+              <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    border: `3px solid ${BORDER}`,
+                    borderTopColor: GREEN,
+                    borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite",
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} style={{ height: 1 }} />
+          </div>
         </div>
       </div>
 
