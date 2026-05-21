@@ -13,6 +13,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { AdminModule } from "./admin/admin.module";
 import { StatsModule } from "./stats/stats.module";
 import { FavoritesModule } from "./favorites/favorites.module";
+import { BlogModule } from "./blog/blog.module";
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { FavoritesModule } from "./favorites/favorites.module";
     AdminModule,
     StatsModule,
     FavoritesModule,
+    BlogModule,
   ],
 })
 export class AppModule {}

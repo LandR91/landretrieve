@@ -111,6 +111,8 @@ model User {
   propertyRequests PropertyRequest[]
   categoryViews    CategoryView[]
   violations       MessageViolation[]
+  blogPosts        BlogPost[]
+  blogComments     BlogComment[]
 }
 
 // ─── AGENCY PROFILE ───────────────────────────────────────────────────────────
@@ -624,4 +626,52 @@ model MessageViolation {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── BLOG ─────────────────────────────────────────────────────────────────────
+
+model BlogCategory {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  slug      String     @unique
+  posts     BlogPost[]
+  createdAt DateTime   @default(now())
+}
+
+model BlogTag {
+  id    String     @id @default(cuid())
+  name  String     @unique
+  slug  String     @unique
+  posts BlogPost[] @relation("BlogPostTags")
+}
+
+model BlogPost {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  excerpt     String?
+  content     String
+  coverImage  String?
+  published   Boolean       @default(false)
+  publishedAt DateTime?
+  categoryId  String?
+  authorId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   User          @relation(fields: [authorId], references: [id])
+  tags     BlogTag[]     @relation("BlogPostTags")
+  comments BlogComment[]
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  content   String
+  postId    String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User     @relation(fields: [authorId], references: [id])
 }

@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { PROVINCE, getComuniByProvincia } from "@/lib/istat";
 import api from "@/lib/api";
-import { CheckIcon } from "lucide-react";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const MAPS_KEY = "AIzaSyCXU5OQRShbztd7a-A5_LFwmVkwOdaOYnk";
@@ -60,7 +59,6 @@ const TIPOLOGIE: Record<string, string[]> = {
 
 // ─── Form data type ──────────────────────────────────────────────────────────
 interface FormData {
-  // Step 1
   titolo: string;
   descrizione: string;
   tipologiaPadre: string;
@@ -68,7 +66,6 @@ interface FormData {
   tipoContratto: "Vendita" | "Affitto" | "";
   prezzo: string;
   valuta: string;
-  // Step 2
   catasto: "TERRENI" | "FABBRICATI" | "";
   provincia: string;
   provinciaCode: string;
@@ -76,7 +73,6 @@ interface FormData {
   foglioMappa: string;
   particella: string;
   subalterno: string;
-  // Step 3
   superficieTotale: string;
   superficieAbitativa: string;
   superficieTerreno: string;
@@ -90,10 +86,8 @@ interface FormData {
   riscaldamento: string;
   piscina: boolean;
   garagePostoAuto: boolean;
-  // Step 4
   videoUrl: string;
   tour360: string;
-  // Step 5
   lat: number | null;
   lng: number | null;
 }
@@ -192,91 +186,14 @@ function onBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTM
   e.currentTarget.style.borderColor = BORDER;
 }
 
-// ─── Step labels ─────────────────────────────────────────────────────────────
-const STEPS = [
-  { label: "Base" },
-  { label: "Catasto" },
-  { label: "Dettagli" },
-  { label: "Galleria" },
-  { label: "Posizione" },
-  { label: "Pubblica" },
-];
-
-// ─── Stepper component ───────────────────────────────────────────────────────
-function Stepper({ current }: { current: number }) {
+// ─── Section header with separator ──────────────────────────────────────────
+function SectionHeader({ title }: { title: string }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 32,
-        flexWrap: "wrap",
-        gap: 0,
-      }}
-    >
-      {STEPS.map((step, i) => {
-        const isCompleted = i < current;
-        const isActive = i === current;
-        return (
-          <React.Fragment key={i}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "50%",
-                  backgroundColor:
-                    isCompleted || isActive ? GREEN : BORDER,
-                  color: isCompleted || isActive ? "#ffffff" : "#6b7280",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {isCompleted ? (
-                  <CheckIcon size={16} strokeWidth={3} />
-                ) : (
-                  i + 1
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: isActive ? 700 : 500,
-                  color: isActive ? GREEN : isCompleted ? GREEN : "#6b7280",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {step.label}
-              </span>
-            </div>
-            {i < STEPS.length - 1 && (
-              <div
-                style={{
-                  flex: 1,
-                  height: 2,
-                  backgroundColor: i < current ? GREEN : BORDER,
-                  margin: "0 4px",
-                  marginBottom: 20,
-                  minWidth: 16,
-                  maxWidth: 60,
-                }}
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
+    <div style={{ marginBottom: 24 }}>
+      <h2 style={{ fontSize: 17, fontWeight: 700, color: TEXT, margin: "0 0 10px" }}>
+        {title}
+      </h2>
+      <hr style={{ border: "none", borderTop: `1px solid ${BORDER}`, margin: 0 }} />
     </div>
   );
 }
@@ -321,7 +238,7 @@ function PlacesSearch({
   );
 }
 
-// ─── Map step inner component (needs to be inside APIProvider) ────────────────
+// ─── Map inner component (needs to be inside APIProvider) ────────────────────
 function MapStep({
   lat,
   lng,
@@ -386,7 +303,6 @@ function MapStep({
 // ─── Main page ───────────────────────────────────────────────────────────────
 export default function NuovoImmobilePage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [docFiles, setDocFiles] = useState<File[]>([]);
@@ -394,18 +310,21 @@ export default function NuovoImmobilePage() {
   const [draftBanner, setDraftBanner] = useState(false);
   const [fileError, setFileError] = useState("");
 
-  // Step 2 province autocomplete
+  // Province autocomplete
   const [provinciaInput, setProvinciaInput] = useState("");
   const [provinceSuggestions, setProvinceSuggestions] = useState<typeof PROVINCE>([]);
   const [showProvinceSugg, setShowProvinceSugg] = useState(false);
 
-  // Step 6
+  // Publish gate
   const [gateData, setGateData] = useState<{ canPublish: boolean; missing: string[] } | null>(null);
   const [gateLoading, setGateLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Debounce save ref
+  // Drop zone drag state
+  const [imgDragOver, setImgDragOver] = useState(false);
+  const [docDragOver, setDocDragOver] = useState(false);
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Restore from localStorage on mount ──
@@ -430,25 +349,22 @@ export default function NuovoImmobilePage() {
   useEffect(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      const toSave = { ...formData };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(toSave));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...formData }));
     }, 500);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [formData]);
 
-  // ── Load publish gate on step 6 ──
+  // ── Load publish gate on mount ──
   useEffect(() => {
-    if (currentStep === 5) {
-      setGateLoading(true);
-      api
-        .get<{ canPublish: boolean; missing: string[] }>("/api/auth/gate/publish")
-        .then((res) => setGateData(res.data))
-        .catch(() => setGateData({ canPublish: true, missing: [] }))
-        .finally(() => setGateLoading(false));
-    }
-  }, [currentStep]);
+    setGateLoading(true);
+    api
+      .get<{ canPublish: boolean; missing: string[] }>("/api/auth/gate/publish")
+      .then((res) => setGateData(res.data))
+      .catch(() => setGateData({ canPublish: true, missing: [] }))
+      .finally(() => setGateLoading(false));
+  }, []);
 
   // ── Helpers ──
   function updateField<K extends keyof FormData>(key: K, value: FormData[K]) {
@@ -463,95 +379,95 @@ export default function NuovoImmobilePage() {
     setDraftBanner(false);
   }
 
-  // ── Validation ──
-  function validateStep(step: number): Record<string, string> {
+  // ── Validation (all fields at once) ──
+  function validateAll(): Record<string, string> {
     const e: Record<string, string> = {};
-    if (step === 0) {
-      if (!formData.titolo.trim()) e.titolo = "Il titolo è obbligatorio";
-      if (!formData.tipologiaPadre) e.tipologiaPadre = "Seleziona una tipologia";
-      if (!formData.tipologiaFiglio) e.tipologiaFiglio = "Seleziona una sottotipologia";
-      if (!formData.tipoContratto) e.tipoContratto = "Seleziona il tipo di contratto";
-      if (!formData.prezzo.trim()) {
-        e.prezzo = "Il prezzo è obbligatorio";
-      } else if (isNaN(Number(formData.prezzo)) || Number(formData.prezzo) <= 0) {
-        e.prezzo = "Inserisci un prezzo valido maggiore di zero";
-      }
+    if (!formData.titolo.trim()) e.titolo = "Il titolo è obbligatorio";
+    if (!formData.tipologiaPadre) e.tipologiaPadre = "Seleziona una tipologia";
+    if (!formData.tipologiaFiglio) e.tipologiaFiglio = "Seleziona una sottotipologia";
+    if (!formData.tipoContratto) e.tipoContratto = "Seleziona il tipo di contratto";
+    if (!formData.prezzo.trim()) {
+      e.prezzo = "Il prezzo è obbligatorio";
+    } else if (isNaN(Number(formData.prezzo)) || Number(formData.prezzo) <= 0) {
+      e.prezzo = "Inserisci un prezzo valido maggiore di zero";
     }
-    if (step === 1) {
-      if (!formData.catasto) e.catasto = "Seleziona il tipo di catasto";
-      if (!formData.provinciaCode) e.provincia = "La provincia è obbligatoria";
-      if (!formData.comune) e.comune = "Il comune è obbligatorio";
-      if (!formData.foglioMappa.trim()) e.foglioMappa = "Il foglio di mappa è obbligatorio";
-      if (!formData.particella.trim()) e.particella = "La particella è obbligatoria";
+    if (!formData.catasto) e.catasto = "Seleziona il tipo di catasto";
+    if (!formData.provinciaCode) e.provincia = "La provincia è obbligatoria";
+    if (!formData.comune) e.comune = "Il comune è obbligatorio";
+    if (!formData.foglioMappa.trim()) e.foglioMappa = "Il foglio di mappa è obbligatorio";
+    if (!formData.particella.trim()) e.particella = "La particella è obbligatoria";
+    if (
+      formData.videoUrl.trim() &&
+      !formData.videoUrl.includes("youtube.com") &&
+      !formData.videoUrl.includes("youtu.be") &&
+      !formData.videoUrl.includes("vimeo.com")
+    ) {
+      e.videoUrl = "URL non valido. Sono accettati solo YouTube e Vimeo.";
     }
-    if (step === 3) {
-      if (
-        formData.videoUrl.trim() &&
-        !formData.videoUrl.includes("youtube.com") &&
-        !formData.videoUrl.includes("youtu.be") &&
-        !formData.videoUrl.includes("vimeo.com")
-      ) {
-        e.videoUrl = "URL non valido. Sono accettati solo YouTube e Vimeo.";
-      }
-    }
-    if (step === 4) {
-      if (formData.lat === null || formData.lng === null) {
-        e.position = "Devi impostare la posizione sulla mappa prima di continuare.";
-      }
+    if (formData.lat === null || formData.lng === null) {
+      e.position = "Devi impostare la posizione sulla mappa prima di continuare.";
     }
     return e;
   }
 
-  // ── Next step ──
-  async function handleNext() {
-    const e = validateStep(currentStep);
+  // ── Submit ──
+  async function handleSubmit(status: "DRAFT" | "PUBLISHED") {
+    const e = validateAll();
     if (Object.keys(e).length > 0) {
       setErrors(e);
+      setSubmitError("Correggi i campi in rosso prima di continuare.");
       return;
     }
     setErrors({});
+    setSubmitError("");
+    setSubmitting(true);
 
-    // Catasto duplicate check on step 2
-    if (currentStep === 1) {
-      try {
-        const res = await api.get("/api/properties/catasto-check", {
-          params: {
-            catasto: formData.catasto,
-            provincia: formData.provinciaCode,
-            comune: formData.comune,
-            foglio: formData.foglioMappa,
-            particella: formData.particella,
-          },
+    // Catasto duplicate check
+    try {
+      const res = await api.get("/api/properties/catasto-check", {
+        params: {
+          catasto: formData.catasto,
+          provincia: formData.provinciaCode,
+          comune: formData.comune,
+          foglio: formData.foglioMappa,
+          particella: formData.particella,
+        },
+      });
+      if (res.status === 409 || (res.data && res.data.duplicate)) {
+        setErrors({
+          catasto: "Esiste già un immobile con questi dati catastali. Verifica i dati inseriti.",
         });
-        if (res.status === 409 || (res.data && res.data.duplicate)) {
-          setErrors({
-            catasto:
-              "Esiste già un immobile con questi dati catastali. Verifica i dati inseriti.",
-          });
-          return;
-        }
-      } catch (err: unknown) {
-        const axiosErr = err as { response?: { status?: number; data?: { duplicate?: boolean } } };
-        if (
-          axiosErr?.response?.status === 409 ||
-          axiosErr?.response?.data?.duplicate
-        ) {
-          setErrors({
-            catasto:
-              "Esiste già un immobile con questi dati catastali. Verifica i dati inseriti.",
-          });
-          return;
-        }
-        // Any other error → proceed
+        setSubmitting(false);
+        return;
+      }
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number; data?: { duplicate?: boolean } } };
+      if (
+        axiosErr?.response?.status === 409 ||
+        axiosErr?.response?.data?.duplicate
+      ) {
+        setErrors({
+          catasto: "Esiste già un immobile con questi dati catastali. Verifica i dati inseriti.",
+        });
+        setSubmitting(false);
+        return;
       }
     }
 
-    setCurrentStep((s) => Math.min(s + 1, 5));
-  }
-
-  function handleBack() {
-    setErrors({});
-    setCurrentStep((s) => Math.max(s - 1, 0));
+    try {
+      await api.post("/api/properties", {
+        ...formData,
+        status,
+        imageCount: imageFiles.length,
+        docCount: docFiles.length,
+      });
+      localStorage.removeItem(DRAFT_KEY);
+      router.push("/dashboard/immobili");
+    } catch {
+      setSubmitError("Si è verificato un errore. Riprova più tardi.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // ── Image/doc file handling ──
@@ -575,11 +491,8 @@ export default function NuovoImmobilePage() {
     const valid: File[] = [];
     let hasInvalid = false;
     Array.from(files).forEach((f) => {
-      if (isValidImage(f)) {
-        valid.push(f);
-      } else {
-        hasInvalid = true;
-      }
+      if (isValidImage(f)) valid.push(f);
+      else hasInvalid = true;
     });
     if (hasInvalid) {
       setFileError(
@@ -596,11 +509,8 @@ export default function NuovoImmobilePage() {
     const valid: File[] = [];
     let hasInvalid = false;
     Array.from(files).forEach((f) => {
-      if (isValidDoc(f)) {
-        valid.push(f);
-      } else {
-        hasInvalid = true;
-      }
+      if (isValidDoc(f)) valid.push(f);
+      else hasInvalid = true;
     });
     if (hasInvalid) {
       setFileError(
@@ -610,26 +520,6 @@ export default function NuovoImmobilePage() {
       setFileError("");
     }
     setDocFiles((prev) => [...prev, ...valid]);
-  }
-
-  // ── Submit ──
-  async function handleSubmit(status: "DRAFT" | "PUBLISHED") {
-    setSubmitting(true);
-    setSubmitError("");
-    try {
-      await api.post("/api/properties", {
-        ...formData,
-        status,
-        imageCount: imageFiles.length,
-        docCount: docFiles.length,
-      });
-      localStorage.removeItem(DRAFT_KEY);
-      router.push("/dashboard/immobili");
-    } catch {
-      setSubmitError("Si è verificato un errore. Riprova più tardi.");
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   // ── Province autocomplete handlers ──
@@ -664,10 +554,10 @@ export default function NuovoImmobilePage() {
     : [];
 
   // ─────────────────────────────────────────────────────────────────────────
-  // RENDER STEPS
+  // SECTION RENDERERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  function renderStep0() {
+  function renderBaseInfo() {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {/* Titolo */}
@@ -723,9 +613,7 @@ export default function NuovoImmobilePage() {
           >
             <option value="">Seleziona categoria</option>
             {Object.keys(TIPOLOGIE).map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
+              <option key={k} value={k}>{k}</option>
             ))}
           </select>
           {errors.tipologiaPadre && <p style={errorStyle}>{errors.tipologiaPadre}</p>}
@@ -746,9 +634,7 @@ export default function NuovoImmobilePage() {
             >
               <option value="">Seleziona sottotipologia</option>
               {TIPOLOGIE[formData.tipologiaPadre].map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
             {errors.tipologiaFiglio && <p style={errorStyle}>{errors.tipologiaFiglio}</p>}
@@ -812,9 +698,7 @@ export default function NuovoImmobilePage() {
               onBlur={onBlur}
             >
               {["EUR", "USD", "GBP", "CHF"].map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
+                <option key={v} value={v}>{v}</option>
               ))}
             </select>
           </div>
@@ -824,15 +708,9 @@ export default function NuovoImmobilePage() {
     );
   }
 
-  function renderStep1() {
+  function renderCatasto() {
     return (
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 20,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
         {/* Catasto - full width */}
         <div style={{ gridColumn: "1 / -1" }}>
           <label style={labelStyle}>
@@ -937,14 +815,10 @@ export default function NuovoImmobilePage() {
             onBlur={onBlur}
           >
             <option value="">
-              {formData.provinciaCode
-                ? "Seleziona comune"
-                : "Prima seleziona la provincia"}
+              {formData.provinciaCode ? "Seleziona comune" : "Prima seleziona la provincia"}
             </option>
             {comuni.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
+              <option key={c} value={c}>{c}</option>
             ))}
           </select>
           {errors.comune && <p style={errorStyle}>{errors.comune}</p>}
@@ -1003,7 +877,7 @@ export default function NuovoImmobilePage() {
     );
   }
 
-  function renderStep2() {
+  function renderDettagli() {
     const fieldConfig = [
       { key: "superficieTotale", label: "Superficie totale (mq)", type: "number" },
       { key: "superficieAbitativa", label: "Superficie abitativa (mq)", type: "number" },
@@ -1017,13 +891,7 @@ export default function NuovoImmobilePage() {
 
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 20,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {fieldConfig.map(({ key, label, type }) => (
             <div key={key}>
               <label style={labelStyle}>{label}</label>
@@ -1041,13 +909,7 @@ export default function NuovoImmobilePage() {
           ))}
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 20,
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           {/* Stato */}
           <div>
             <label style={labelStyle}>Stato</label>
@@ -1059,13 +921,9 @@ export default function NuovoImmobilePage() {
               onBlur={onBlur}
             >
               <option value="">Seleziona</option>
-              {["Da ristrutturare", "Buono stato", "Ristrutturato", "Nuovo/Recente"].map(
-                (s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                )
-              )}
+              {["Da ristrutturare", "Buono stato", "Ristrutturato", "Nuovo/Recente"].map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
 
@@ -1080,13 +938,9 @@ export default function NuovoImmobilePage() {
               onBlur={onBlur}
             >
               <option value="">Seleziona</option>
-              {["A4", "A3", "A2", "A1", "B", "C", "D", "E", "F", "G", "Esente"].map(
-                (c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                )
-              )}
+              {["A4", "A3", "A2", "A1", "B", "C", "D", "E", "F", "G", "Esente"].map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           </div>
 
@@ -1102,9 +956,7 @@ export default function NuovoImmobilePage() {
             >
               <option value="">Seleziona</option>
               {["Autonomo", "Centralizzato", "Assente", "Pompa di calore"].map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
+                <option key={r} value={r}>{r}</option>
               ))}
             </select>
           </div>
@@ -1134,12 +986,7 @@ export default function NuovoImmobilePage() {
                 type="checkbox"
                 checked={formData[key]}
                 onChange={(e) => updateField(key, e.target.checked)}
-                style={{
-                  width: 16,
-                  height: 16,
-                  accentColor: GREEN,
-                  cursor: "pointer",
-                }}
+                style={{ width: 16, height: 16, accentColor: GREEN, cursor: "pointer" }}
               />
               {label}
             </label>
@@ -1149,11 +996,7 @@ export default function NuovoImmobilePage() {
     );
   }
 
-  // Drop zone drag state
-  const [imgDragOver, setImgDragOver] = useState(false);
-  const [docDragOver, setDocDragOver] = useState(false);
-
-  function renderStep3() {
+  function renderGalleria() {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
         {fileError && (
@@ -1175,16 +1018,9 @@ export default function NuovoImmobilePage() {
         <div>
           <label style={labelStyle}>Immagini (JPEG, PNG, WebP)</label>
           <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setImgDragOver(true);
-            }}
+            onDragOver={(e) => { e.preventDefault(); setImgDragOver(true); }}
             onDragLeave={() => setImgDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setImgDragOver(false);
-              handleImageFiles(e.dataTransfer.files);
-            }}
+            onDrop={(e) => { e.preventDefault(); setImgDragOver(false); handleImageFiles(e.dataTransfer.files); }}
             onClick={() => document.getElementById("img-upload")?.click()}
             style={{
               border: `2px dashed ${imgDragOver ? GREEN : BORDER}`,
@@ -1213,19 +1049,9 @@ export default function NuovoImmobilePage() {
             onChange={(e) => handleImageFiles(e.target.files)}
           />
           {imageFiles.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 10,
-                marginTop: 12,
-              }}
-            >
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
               {imageFiles.map((f, i) => (
-                <div
-                  key={i}
-                  style={{ position: "relative", display: "inline-block" }}
-                >
+                <div key={i} style={{ position: "relative", display: "inline-block" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={URL.createObjectURL(f)}
@@ -1240,9 +1066,7 @@ export default function NuovoImmobilePage() {
                   />
                   <button
                     type="button"
-                    onClick={() =>
-                      setImageFiles((prev) => prev.filter((_, j) => j !== i))
-                    }
+                    onClick={() => setImageFiles((prev) => prev.filter((_, j) => j !== i))}
                     style={{
                       position: "absolute",
                       top: -6,
@@ -1273,16 +1097,9 @@ export default function NuovoImmobilePage() {
         <div>
           <label style={labelStyle}>Documenti (PDF)</label>
           <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDocDragOver(true);
-            }}
+            onDragOver={(e) => { e.preventDefault(); setDocDragOver(true); }}
             onDragLeave={() => setDocDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDocDragOver(false);
-              handleDocFiles(e.dataTransfer.files);
-            }}
+            onDrop={(e) => { e.preventDefault(); setDocDragOver(false); handleDocFiles(e.dataTransfer.files); }}
             onClick={() => document.getElementById("doc-upload")?.click()}
             style={{
               border: `2px dashed ${docDragOver ? GREEN : BORDER}`,
@@ -1298,9 +1115,7 @@ export default function NuovoImmobilePage() {
               Trascina i PDF qui oppure{" "}
               <span style={{ color: GREEN, fontWeight: 600 }}>sfoglia</span>
             </p>
-            <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
-              Solo file PDF
-            </p>
+            <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>Solo file PDF</p>
           </div>
           <input
             id="doc-upload"
@@ -1311,9 +1126,7 @@ export default function NuovoImmobilePage() {
             onChange={(e) => handleDocFiles(e.target.files)}
           />
           {docFiles.length > 0 && (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}
-            >
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
               {docFiles.map((f, i) => (
                 <div
                   key={i}
@@ -1331,9 +1144,7 @@ export default function NuovoImmobilePage() {
                   <span style={{ color: TEXT }}>{f.name}</span>
                   <button
                     type="button"
-                    onClick={() =>
-                      setDocFiles((prev) => prev.filter((_, j) => j !== i))
-                    }
+                    onClick={() => setDocFiles((prev) => prev.filter((_, j) => j !== i))}
                     style={{
                       background: "none",
                       border: "none",
@@ -1389,7 +1200,7 @@ export default function NuovoImmobilePage() {
     );
   }
 
-  function renderStep4() {
+  function renderPosizione() {
     return (
       <div>
         <APIProvider apiKey={MAPS_KEY}>
@@ -1409,14 +1220,12 @@ export default function NuovoImmobilePage() {
     );
   }
 
-  function renderStep5() {
+  function renderPubblicazione() {
     const canPublish =
-      !gateLoading && gateData !== null
-        ? gateData.canPublish
-        : true;
+      !gateLoading && gateData !== null ? gateData.canPublish : true;
 
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {gateLoading && (
           <p style={{ fontSize: 14, color: "#6b7280" }}>
             Verifica autorizzazioni in corso...
@@ -1470,13 +1279,13 @@ export default function NuovoImmobilePage() {
         {/* Summary */}
         <div
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: BG,
             border: `1px solid ${BORDER}`,
             borderRadius: 8,
             padding: 20,
           }}
         >
-          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: TEXT }}>
+          <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 700, color: TEXT }}>
             Riepilogo annuncio
           </h3>
           <dl
@@ -1508,7 +1317,9 @@ export default function NuovoImmobilePage() {
             <dd style={{ margin: 0, color: TEXT }}>{formData.catasto || "—"}</dd>
             <dt style={{ fontWeight: 600, color: LABEL_COLOR }}>Comune</dt>
             <dd style={{ margin: 0, color: TEXT }}>
-              {formData.comune ? `${formData.comune} (${formData.provinciaCode})` : "—"}
+              {formData.comune
+                ? `${formData.comune} (${formData.provinciaCode})`
+                : "—"}
             </dd>
             <dt style={{ fontWeight: 600, color: LABEL_COLOR }}>Posizione</dt>
             <dd style={{ margin: 0, color: TEXT }}>
@@ -1582,33 +1393,11 @@ export default function NuovoImmobilePage() {
   // ─────────────────────────────────────────────────────────────────────────
   // MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────
-  const stepTitles = [
-    "Informazioni di base",
-    "Dati catastali",
-    "Dettagli tecnici",
-    "Galleria e media",
-    "Localizzazione",
-    "Pubblicazione",
-  ];
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: BG,
-        padding: "32px 24px",
-      }}
-    >
+    <div style={{ minHeight: "100vh", backgroundColor: BG, padding: "32px 24px" }}>
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
         {/* Header */}
-        <h1
-          style={{
-            fontSize: 24,
-            fontWeight: 700,
-            color: TEXT,
-            marginBottom: 8,
-          }}
-        >
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
           Crea nuovo annuncio
         </h1>
         <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 28 }}>
@@ -1653,109 +1442,55 @@ export default function NuovoImmobilePage() {
           </div>
         )}
 
-        {/* Card */}
+        {/* All sections in a single card */}
         <div
           style={{
             backgroundColor: "#ffffff",
             border: `1px solid ${BORDER}`,
             borderRadius: 12,
-            padding: "28px 28px 24px",
+            padding: "32px 28px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 40,
           }}
         >
-          <Stepper current={currentStep} />
-
-          <h2
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: TEXT,
-              marginBottom: 24,
-              paddingBottom: 12,
-              borderBottom: `1px solid ${BORDER}`,
-            }}
-          >
-            Passo {currentStep + 1}: {stepTitles[currentStep]}
-          </h2>
-
-          {/* Step content */}
-          <div style={{ minHeight: 320 }}>
-            {currentStep === 0 && renderStep0()}
-            {currentStep === 1 && renderStep1()}
-            {currentStep === 2 && renderStep2()}
-            {currentStep === 3 && renderStep3()}
-            {currentStep === 4 && renderStep4()}
-            {currentStep === 5 && renderStep5()}
+          {/* 1. Informazioni di base */}
+          <div>
+            <SectionHeader title="Informazioni di base" />
+            {renderBaseInfo()}
           </div>
 
-          {/* Navigation */}
-          {currentStep < 5 && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginTop: 28,
-                paddingTop: 20,
-                borderTop: `1px solid ${BORDER}`,
-              }}
-            >
-              <div>
-                {currentStep > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    style={btnSecondary}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = BG)
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#ffffff")
-                    }
-                  >
-                    ← Indietro
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleNext}
-                style={btnPrimary}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#1e8c4a")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = GREEN)
-                }
-              >
-                Avanti →
-              </button>
-            </div>
-          )}
+          {/* 2. Dati catastali */}
+          <div>
+            <SectionHeader title="Dati catastali" />
+            {renderCatasto()}
+          </div>
 
-          {currentStep === 5 && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-start",
-                marginTop: 28,
-                paddingTop: 20,
-                borderTop: `1px solid ${BORDER}`,
-              }}
-            >
-              <button
-                type="button"
-                onClick={handleBack}
-                style={btnSecondary}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = BG)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#ffffff")
-                }
-              >
-                ← Indietro
-              </button>
-            </div>
-          )}
+          {/* 3. Dettagli tecnici */}
+          <div>
+            <SectionHeader title="Dettagli tecnici" />
+            {renderDettagli()}
+          </div>
+
+          {/* 4. Galleria e media */}
+          <div>
+            <SectionHeader title="Galleria e media" />
+            {renderGalleria()}
+          </div>
+
+          {/* 5. Localizzazione */}
+          <div>
+            <SectionHeader title="Localizzazione" />
+            {renderPosizione()}
+          </div>
+
+          <hr style={{ border: "none", borderTop: `1px solid ${BORDER}`, margin: 0 }} />
+
+          {/* 6. Pubblicazione */}
+          <div>
+            <SectionHeader title="Pubblicazione" />
+            {renderPubblicazione()}
+          </div>
         </div>
       </div>
     </div>

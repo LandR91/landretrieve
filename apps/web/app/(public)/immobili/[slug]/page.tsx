@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { OfferWidget } from "@/components/offers/OfferWidget";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -205,9 +206,22 @@ function ImagePlaceholder({ index }: { index: number }) {
   );
 }
 
+const CURRENCY_NAMES: Record<string, string> = { USD: "US$", GBP: "£", CHF: "CHF" };
+
 export default function PropertyDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const property = MOCK_PROPERTIES[slug as string] ?? MOCK_PROPERTIES["default"];
+  const [fxRates, setFxRates] = useState<Record<string, number> | null>(null);
+
+  useEffect(() => {
+    if (property.currency !== "EUR") return;
+    fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,GBP,CHF")
+      .then((r) => r.json())
+      .then((data: { rates?: Record<string, number> }) => {
+        if (data.rates) setFxRates(data.rates);
+      })
+      .catch(() => {});
+  }, [property.currency]);
 
   const listBadgeColor = property.listingType === "SALE" ? GREEN : "#0ea5e9";
   const listBadgeLabel = property.listingType === "SALE" ? "Vendita" : "Affitto";
@@ -340,6 +354,23 @@ export default function PropertyDetailPage() {
               {property.listingType === "SALE" && (
                 <div style={{ fontSize: ".75rem", color: MUTED }}>
                   ≈ {formatPrice(Math.round(property.price / property.mq), property.currency)}/m²
+                </div>
+              )}
+              {fxRates && (
+                <div style={{ marginTop: ".6rem", paddingTop: ".6rem", borderTop: `1px solid ${BORDER}` }}>
+                  <div style={{ fontSize: ".7rem", fontWeight: 700, color: MUTED, letterSpacing: ".05em", textTransform: "uppercase", marginBottom: ".3rem" }}>
+                    Cambio BCE (indicativo)
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: ".18rem" }}>
+                    {Object.entries(fxRates).map(([curr, rate]) => (
+                      <div key={curr} style={{ fontSize: ".78rem", color: MUTED }}>
+                        {CURRENCY_NAMES[curr] ?? curr}{" "}
+                        <span style={{ fontWeight: 600, color: TEXT }}>
+                          {new Intl.NumberFormat("it-IT", { maximumFractionDigits: 0 }).format(Math.round(property.price * rate))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

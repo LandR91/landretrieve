@@ -163,6 +163,7 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
                 }}
               >
                 {[
+                  { label: "Blog", href: "/blog" },
                   { label: "Chi Siamo", href: "/chi-siamo" },
                   { label: "Contatti", href: "/contatti" },
                   { label: "FAQ", href: "/faq" },
@@ -197,6 +198,26 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
           <span style={{ fontSize: ".875rem", color: isSolid ? "#374151" : "rgba(255,255,255,.88)", cursor: "pointer" }}>
             🇮🇹 IT
           </span>
+
+          {/* User icon for unauthenticated mobile users */}
+          {!isAuthenticated && (
+            <Link
+              href="/login"
+              className="auth-icon-mobile"
+              style={{
+                display: "none",
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                border: `1.5px solid ${loginBorder}`,
+                alignItems: "center",
+                justifyContent: "center",
+                textDecoration: "none",
+              }}
+            >
+              <User size={17} color={isSolid ? "#374151" : "rgba(255,255,255,.88)"} />
+            </Link>
+          )}
 
           {isAuthenticated ? (
             /* Avatar dropdown */
@@ -296,7 +317,7 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
               )}
             </div>
           ) : (
-            <>
+            <div className="auth-btns" style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Link
                 href="/login"
                 style={{
@@ -345,7 +366,7 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
               >
                 Registrati
               </Link>
-            </>
+            </div>
           )}
 
           {/* Hamburger */}
@@ -395,6 +416,7 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
             { label: "Agenzie", href: "/agenzie" },
             { label: "Agenti", href: "/agenti" },
             { label: "Piani", href: "/piani" },
+            { label: "Blog", href: "/blog" },
             { label: "Chi Siamo", href: "/chi-siamo" },
             { label: "Contatti", href: "/contatti" },
             { label: "FAQ", href: "/faq" },
@@ -437,6 +459,10 @@ export function Navbar({ transparent = false }: { transparent?: boolean }) {
         @media (max-width: 768px) {
           .nav-center-links { display: none !important; }
           .hamburger-btn { display: flex !important; }
+        }
+        @media (max-width: 1023px) {
+          .auth-btns { display: none !important; }
+          .auth-icon-mobile { display: flex !important; }
         }
       `}</style>
     </>
