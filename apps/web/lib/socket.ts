@@ -16,9 +16,14 @@ export function getSocket(token: string): Socket {
   currentToken = token;
   socket = io(`${API_URL}/messaging`, {
     auth: { token: `Bearer ${token}` },
-    transports: ["websocket"],
+    transports: ["polling", "websocket"],
     reconnectionAttempts: 5,
     reconnectionDelay: 2000,
+    withCredentials: true,
+  });
+
+  socket.on("connect_error", (err) => {
+    console.error("[Socket] Errore connessione:", err.message);
   });
 
   return socket;
