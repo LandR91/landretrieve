@@ -8,7 +8,8 @@ import { useAuth } from "@/hooks/use-auth";
 type NavItem =
   | { type: "link"; label: string; href: string }
   | { type: "action"; label: string; action: () => void }
-  | { type: "separator" };
+  | { type: "separator" }
+  | { type: "section"; label: string };
 
 function useNavItems(): NavItem[] {
   const { role } = useAuth();
@@ -36,21 +37,24 @@ function useNavItems(): NavItem[] {
 
   if (role === "AGENT") {
     return [
+      { type: "section", label: "PANORAMICA" },
       { type: "link", label: "Dashboard", href: "/dashboard" },
       { type: "link", label: "Attività", href: "/dashboard/attivita" },
       { type: "link", label: "Statistiche", href: "/dashboard/statistiche" },
+      { type: "section", label: "CRM" },
       { type: "link", label: "Offerte", href: "/dashboard/offerte" },
       { type: "link", label: "Lead", href: "/dashboard/lead" },
       { type: "link", label: "Richieste", href: "/dashboard/richieste" },
-      { type: "separator" },
+      { type: "section", label: "IMMOBILI" },
       { type: "link", label: "Immobili", href: "/dashboard/immobili" },
       { type: "link", label: "Crea annuncio", href: "/dashboard/immobili/nuovo" },
-      { type: "separator" },
       { type: "link", label: "Preferiti", href: "/dashboard/preferiti" },
       { type: "link", label: "Ricerche salvate", href: "/dashboard/ricerche" },
-      { type: "link", label: "Fatture", href: "/dashboard/fatture" },
+      { type: "section", label: "ALTRO" },
       { type: "link", label: "Messaggi", href: "/dashboard/messaggi" },
-      { type: "separator" },
+      { type: "link", label: "Fatture", href: "/dashboard/fatture" },
+      { type: "link", label: "Abbonamento", href: "/dashboard/abbonamento" },
+      { type: "section", label: "PROFILO" },
       { type: "link", label: "Il mio profilo", href: "/dashboard/profilo" },
       logout,
     ];
@@ -58,22 +62,26 @@ function useNavItems(): NavItem[] {
 
   if (role === "AGENCY") {
     return [
+      { type: "section", label: "PANORAMICA" },
       { type: "link", label: "Dashboard", href: "/dashboard" },
       { type: "link", label: "Attività", href: "/dashboard/attivita" },
       { type: "link", label: "Statistiche", href: "/dashboard/statistiche" },
+      { type: "section", label: "CRM" },
       { type: "link", label: "Offerte", href: "/dashboard/offerte" },
       { type: "link", label: "Lead", href: "/dashboard/lead" },
       { type: "link", label: "Richieste", href: "/dashboard/richieste" },
-      { type: "separator" },
+      { type: "section", label: "IMMOBILI" },
       { type: "link", label: "Immobili", href: "/dashboard/immobili" },
       { type: "link", label: "Crea annuncio", href: "/dashboard/immobili/nuovo" },
-      { type: "link", label: "Agenti", href: "/dashboard/agenti" },
-      { type: "separator" },
       { type: "link", label: "Preferiti", href: "/dashboard/preferiti" },
       { type: "link", label: "Ricerche salvate", href: "/dashboard/ricerche" },
-      { type: "link", label: "Fatture", href: "/dashboard/fatture" },
+      { type: "section", label: "TEAM" },
+      { type: "link", label: "Agenti", href: "/dashboard/agenti" },
+      { type: "link", label: "Aggiungi agente", href: "/dashboard/agenti/nuovo" },
+      { type: "section", label: "ALTRO" },
       { type: "link", label: "Messaggi", href: "/dashboard/messaggi" },
-      { type: "separator" },
+      { type: "link", label: "Fatture", href: "/dashboard/fatture" },
+      { type: "section", label: "PROFILO" },
       { type: "link", label: "Profilo Agenzia", href: "/dashboard/profilo-agenzia" },
       logout,
     ];
@@ -117,6 +125,24 @@ export function DashSidebar() {
                 key={i}
                 style={{ height: 1, backgroundColor: "#B0B0B0", margin: "6px 8px" }}
               />
+            );
+          }
+
+          if (item.type === "section") {
+            return (
+              <div
+                key={i}
+                style={{
+                  padding: "10px 12px 4px",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  color: "#6b7280",
+                  textTransform: "uppercase",
+                }}
+              >
+                {item.label}
+              </div>
             );
           }
 

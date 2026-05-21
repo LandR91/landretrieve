@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { COMUNI } from "@/lib/istat";
 import { useRecaptcha } from "@/hooks/use-recaptcha";
+import { useAuth } from "@/hooks/use-auth";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const GREEN = "#26A55B";
@@ -247,6 +248,7 @@ function TipologieSelect({ selected, onChange, error }: {
 export default function CercaImmobilePage() {
   const { data: session, status } = useSession();
   const { getToken } = useRecaptcha();
+  const { withPhotoGate } = useAuth();
   const user = session?.user as {
     id?: string; firstName?: string; lastName?: string; email?: string;
     phone?: string; avatar?: string; role?: string;
@@ -290,30 +292,6 @@ export default function CercaImmobilePage() {
     );
   }
 
-  // Avatar gate
-  if (status === "authenticated" && !user?.avatar) {
-    return (
-      <div>
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 700, color: TEXT, margin: "0 0 1.25rem" }}>Cerca Immobile</h1>
-        <div style={{ background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "2rem 1.5rem", maxWidth: 480, textAlign: "center" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: ".75rem" }}>📸</div>
-          <p style={{ fontWeight: 700, color: TEXT, margin: "0 0 .4rem" }}>Foto profilo richiesta</p>
-          <p style={{ fontSize: ".85rem", color: MUTED, margin: "0 0 1.25rem", lineHeight: 1.6 }}>
-            Per cercare un immobile devi prima caricare una <strong>foto profilo</strong>. Aiuta i professionisti a riconoscerti.
-          </p>
-          <Link
-            href="/dashboard/profilo"
-            style={{ display: "inline-block", padding: ".6rem 1.4rem", background: GREEN, color: "#fff", borderRadius: 7, fontWeight: 600, fontSize: ".88rem", textDecoration: "none" }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = GREEN_DARK)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = GREEN)}
-          >
-            Carica foto profilo
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   function updateForm(key: keyof FormState, val: string | boolean) {
     setForm((f) => ({ ...f, [key]: val }));
     if (errors[key]) setErrors((e) => { const n = { ...e }; delete n[key]; return n; });
@@ -328,10 +306,7 @@ export default function CercaImmobilePage() {
     return e;
   }
 
-  async function handleSubmit(ev: React.FormEvent) {
-    ev.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+  async function doSubmit() {
     setLoading(true);
     setApiError(null);
     const recaptchaToken = await getToken("property_request");
@@ -368,6 +343,13 @@ export default function CercaImmobilePage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    withPhotoGate(() => { void doSubmit(); });
   }
 
   function resetForm() {

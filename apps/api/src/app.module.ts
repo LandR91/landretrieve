@@ -12,6 +12,7 @@ import { CrmModule } from "./crm/crm.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { AdminModule } from "./admin/admin.module";
 import { StatsModule } from "./stats/stats.module";
+import { FavoritesModule } from "./favorites/favorites.module";
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { StatsModule } from "./stats/stats.module";
     PaymentsModule,
     AdminModule,
     StatsModule,
+    FavoritesModule,
   ],
 })
 export class AppModule {}

@@ -55,7 +55,6 @@ const TIPOLOGIE: Record<string, string[]> = {
     "Cantina vinicola",
     "Frantoio",
     "Fattoria",
-    "Allevamento",
   ],
 };
 
@@ -680,7 +679,7 @@ export default function NuovoImmobilePage() {
             type="text"
             value={formData.titolo}
             onChange={(e) => updateField("titolo", e.target.value)}
-            placeholder="Es. Casale con terreno in Toscana"
+            placeholder="Es. Casale con terreno in Umbria"
             style={inputStyle}
             onFocus={onFocus}
             onBlur={onBlur}
