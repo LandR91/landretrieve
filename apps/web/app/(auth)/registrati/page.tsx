@@ -4,207 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Eye, EyeOff, Loader2, Search, Building2, Handshake, ChevronLeft, Plus, Minus } from "lucide-react";
+import { Eye, EyeOff, Loader2, Search, Building2, Handshake, ChevronLeft } from "lucide-react";
 import { useRecaptcha } from "@/hooks/use-recaptcha";
 
 type RoleType = "VISITOR" | "AGENCY" | "AGENT" | null;
-type BillingCycle = "MONTHLY" | "YEARLY";
-type PlanType = "CONNECT" | "SIGNATURE";
 
 const COUNTRIES = [
   "Italia", "Francia", "Germania", "Spagna", "Portogallo", "Regno Unito",
   "Stati Uniti", "Svizzera", "Belgio", "Paesi Bassi", "Austria", "Altro",
 ];
-
-const CONNECT_MONTHLY = 29.9;
-const CONNECT_YEARLY = 322.92;
-const BADGE_PRICE = 4.9;
-const FEATURED_PRICE = 7.9;
-
-function calcTotal(plan: PlanType, cycle: BillingCycle, badge: boolean, featured: number) {
-  const base = CONNECT_MONTHLY;
-  const badgeAmt = badge ? BADGE_PRICE : 0;
-  const featuredAmt = featured * FEATURED_PRICE;
-  const monthly = base + badgeAmt + featuredAmt;
-  if (cycle === "YEARLY") {
-    const discount = plan === "SIGNATURE" ? 0.12 : 0.1;
-    return { monthly, annual: +(monthly * 12 * (1 - discount)).toFixed(2) };
-  }
-  return { monthly, annual: null };
-}
-
-// ─── Componente blocco piano (riusabile per Agenzia e Agente) ─────────────────
-function PlanBlock({
-  plan, setPlan, cycle, setCycle, badge, setBadge, featured, setFeatured,
-}: {
-  plan: PlanType; setPlan: (p: PlanType) => void;
-  cycle: BillingCycle; setCycle: (c: BillingCycle) => void;
-  badge: boolean; setBadge: (b: boolean) => void;
-  featured: number; setFeatured: (n: number) => void;
-}) {
-  const { monthly, annual } = calcTotal(plan, cycle, badge, featured);
-
-  return (
-    <div className="mt-6 rounded-xl border-2 p-5" style={{ borderColor: "#26A55B", backgroundColor: "#f0fbf5" }}>
-      <p className="label-text mb-4" style={{ color: "#1a7a42" }}>Scegli il tuo piano</p>
-
-      {/* Toggle mensile/annuale */}
-      <div className="mb-5 flex rounded-lg border p-1" style={{ borderColor: "#D4D4D4", backgroundColor: "#fff" }}>
-        {(["MONTHLY", "YEARLY"] as BillingCycle[]).map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCycle(c)}
-            className="flex-1 rounded-md py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: cycle === c ? "#26A55B" : "transparent",
-              color: cycle === c ? "#fff" : "#374151",
-            }}
-          >
-            {c === "MONTHLY" ? "Mensile" : "Annuale −10%"}
-          </button>
-        ))}
-      </div>
-
-      {/* Card LandRetrieve.com Connect */}
-      <div
-        onClick={() => setPlan("CONNECT")}
-        className="mb-3 cursor-pointer rounded-lg border-2 p-4 transition-colors"
-        style={{
-          borderColor: plan === "CONNECT" ? "#26A55B" : "#D4D4D4",
-          backgroundColor: plan === "CONNECT" ? "#e8f7ef" : "#fff",
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold" style={{ color: "#111111" }}>
-              LandRetrieve.com Connect
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
-              Annunci illimitati · Profilo pubblico · CRM · Messaggistica
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="font-bold" style={{ color: "#26A55B" }}>
-              €{cycle === "YEARLY" ? "26,91" : "29,90"}<span className="text-xs font-normal">/mese</span>
-            </p>
-            {cycle === "YEARLY" && (
-              <p className="text-xs" style={{ color: "#4b5563" }}>€322,92/anno</p>
-            )}
-          </div>
-        </div>
-        <div className="mt-1 flex justify-end">
-          <div
-            className="h-4 w-4 rounded-full border-2 flex items-center justify-center"
-            style={{ borderColor: plan === "CONNECT" ? "#26A55B" : "#D4D4D4" }}
-          >
-            {plan === "CONNECT" && (
-              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: "#26A55B" }} />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Card LandRetrieve.com Signature */}
-      <div
-        onClick={() => setPlan("SIGNATURE")}
-        className="cursor-pointer rounded-lg border-2 p-4 transition-colors"
-        style={{
-          borderColor: plan === "SIGNATURE" ? "#26A55B" : "#D4D4D4",
-          backgroundColor: plan === "SIGNATURE" ? "#e8f7ef" : "#fff",
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold" style={{ color: "#111111" }}>
-              LandRetrieve.com Signature
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: "#4b5563" }}>
-              Connect + Badge Verificato + Immobili In Primo Piano
-            </p>
-          </div>
-          <div className="mt-1 flex justify-end">
-            <div
-              className="h-4 w-4 rounded-full border-2 flex items-center justify-center"
-              style={{ borderColor: plan === "SIGNATURE" ? "#26A55B" : "#D4D4D4" }}
-            >
-              {plan === "SIGNATURE" && (
-                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: "#26A55B" }} />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {plan === "SIGNATURE" && (
-          <div className="mt-3 space-y-3 border-t pt-3" style={{ borderColor: "#D4D4D4" }}>
-            {/* Badge */}
-            <label className="flex cursor-pointer items-center justify-between">
-              <span className="text-sm" style={{ color: "#374151" }}>
-                ☑ Badge Account Verificato
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium" style={{ color: "#26A55B" }}>+€4,90/mese</span>
-                <input
-                  type="checkbox"
-                  checked={badge}
-                  onChange={(e) => setBadge(e.target.checked)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-4 w-4 accent-[#26A55B]"
-                />
-              </div>
-            </label>
-
-            {/* IPP */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm" style={{ color: "#374151" }}>
-                Immobili In Primo Piano (+€7,90/imm.)
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setFeatured(Math.max(0, featured - 1)); }}
-                  className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors"
-                  style={{ borderColor: "#D4D4D4" }}
-                >
-                  <Minus size={12} />
-                </button>
-                <span className="w-5 text-center text-sm font-semibold">{featured}</span>
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setFeatured(featured + 1); }}
-                  className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors"
-                  style={{ borderColor: "#D4D4D4" }}
-                >
-                  <Plus size={12} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Riepilogo totale */}
-      <div className="mt-4 rounded-lg border p-3" style={{ borderColor: "#D4D4D4", backgroundColor: "#fff" }}>
-        <div className="flex justify-between text-sm">
-          <span style={{ color: "#374151" }}>Totale mensile</span>
-          <span className="font-bold" style={{ color: "#26A55B" }}>€{monthly.toFixed(2)}/mese</span>
-        </div>
-        {annual !== null && (
-          <div className="flex justify-between text-sm mt-1">
-            <span style={{ color: "#374151" }}>Totale annuale (−{plan === "SIGNATURE" ? "12" : "10"}%)</span>
-            <span className="font-bold" style={{ color: "#26A55B" }}>€{annual}/anno</span>
-          </div>
-        )}
-      </div>
-
-      <p className="mt-3 text-center text-xs" style={{ color: "#4b5563" }}>
-        🔒 Pagamento sicuro via Stripe · IVA inclusa · Disdici quando vuoi
-      </p>
-    </div>
-  );
-}
-
-// ─── Pagina principale ────────────────────────────────────────────────────────
 
 export default function RegistratiPage() {
   const router = useRouter();
@@ -221,7 +29,9 @@ export default function RegistratiPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [agencyName, setAgencyName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
   const [country, setCountry] = useState("Italia");
+  const [city, setCity] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [taxNumber, setTaxNumber] = useState("");
@@ -229,12 +39,6 @@ export default function RegistratiPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [privacy, setPrivacy] = useState(false);
-
-  // Piano
-  const [plan, setPlan] = useState<PlanType>("CONNECT");
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("MONTHLY");
-  const [badge, setBadge] = useState(false);
-  const [featured, setFeatured] = useState(0);
 
   const ROLES = [
     {
@@ -279,10 +83,10 @@ export default function RegistratiPage() {
 
       const body =
         role === "VISITOR"
-          ? { title, firstName, lastName, country, email, phone, password, confirmPassword }
+          ? { title, firstName, lastName, country, city: city || undefined, email, phone, password, confirmPassword }
           : role === "AGENCY"
-            ? { agencyName, country, email, phone, taxNumber, license, password, confirmPassword, plan, billingCycle, badgeAddon: badge, featuredCount: featured, recaptchaToken }
-            : { title, firstName, lastName, country, email, phone, taxNumber, license, password, confirmPassword, plan, billingCycle, badgeAddon: badge, featuredCount: featured, recaptchaToken };
+            ? { agencyName, ownerName: ownerName || undefined, country, city: city || undefined, email, phone, taxNumber, license, password, confirmPassword, recaptchaToken }
+            : { title, firstName, lastName, country, city: city || undefined, email, phone, taxNumber, license, password, confirmPassword, recaptchaToken };
 
       const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
       const res = await fetch(`${API}${endpoint}`, {
@@ -297,11 +101,10 @@ export default function RegistratiPage() {
         throw new Error(msg ?? "Registrazione fallita");
       }
 
-      // Login automatico dopo registrazione
       await signIn("credentials", { email, password, redirect: false });
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message ?? "Errore durante la registrazione");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Errore durante la registrazione");
     } finally {
       setLoading(false);
     }
@@ -419,7 +222,6 @@ export default function RegistratiPage() {
               {/* ── VISITOR ─────────────────────────────────────────────── */}
               {role === "VISITOR" && (
                 <>
-                  {/* Titolo */}
                   <div>
                     <label className={labelClass} style={{ color: "#374151" }}>Titolo *</label>
                     <div className="flex gap-3">
@@ -440,7 +242,6 @@ export default function RegistratiPage() {
                       ))}
                     </div>
                   </div>
-                  {/* Nome / Cognome */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={labelClass} style={{ color: "#374151" }}>Nome *</label>
@@ -460,6 +261,10 @@ export default function RegistratiPage() {
                   <div>
                     <label className={labelClass} style={{ color: "#374151" }}>Nome Agenzia *</label>
                     <input required value={agencyName} onChange={(e) => setAgencyName(e.target.value)} className={inputClass} style={inputStyle} {...inputFocus} placeholder="Tuscany Estates" />
+                  </div>
+                  <div>
+                    <label className={labelClass} style={{ color: "#374151" }}>Nome Proprietario *</label>
+                    <input required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className={inputClass} style={inputStyle} {...inputFocus} placeholder="Mario Rossi" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -521,17 +326,32 @@ export default function RegistratiPage() {
               )}
 
               {/* ── Campi comuni ─────────────────────────────────────────── */}
-              <div>
-                <label className={labelClass} style={{ color: "#374151" }}>Paese *</label>
-                <select
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className={inputClass}
-                  style={inputStyle}
-                  {...inputFocus}
-                >
-                  {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
-                </select>
+              {/* Paese + Città sulla stessa riga */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass} style={{ color: "#374151" }}>Paese *</label>
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
+                    {...inputFocus}
+                  >
+                    {COUNTRIES.map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass} style={{ color: "#374151" }}>Città</label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className={inputClass}
+                    style={inputStyle}
+                    {...inputFocus}
+                    placeholder="es. Firenze"
+                  />
+                </div>
               </div>
 
               <div>
@@ -569,14 +389,18 @@ export default function RegistratiPage() {
                 </div>
               </div>
 
-              {/* Blocco piano (solo Agency / Agent) */}
+              {/* Nota piano (solo Agency / Agent) */}
               {(role === "AGENCY" || role === "AGENT") && (
-                <PlanBlock
-                  plan={plan} setPlan={setPlan}
-                  cycle={billingCycle} setCycle={setBillingCycle}
-                  badge={badge} setBadge={setBadge}
-                  featured={featured} setFeatured={setFeatured}
-                />
+                <div className="rounded-lg border p-3" style={{ borderColor: "#D4D4D4", backgroundColor: "#f0fbf5" }}>
+                  <p className="text-xs" style={{ color: "#374151", lineHeight: 1.6 }}>
+                    <strong style={{ color: "#26A55B" }}>Piano gratuito per 14 giorni.</strong>{" "}
+                    Dopo la registrazione potrai scegliere il tuo piano da{" "}
+                    <Link href="/piani" target="_blank" style={{ color: "#26A55B", textDecoration: "underline" }}>
+                      LandRetrieve.com Connect o Signature
+                    </Link>{" "}
+                    dalla sezione Abbonamento della dashboard.
+                  </p>
+                </div>
               )}
 
               {/* Privacy */}

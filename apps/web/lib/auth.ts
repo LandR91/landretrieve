@@ -29,6 +29,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        remember: { label: "Ricordami", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -57,6 +58,7 @@ export const authOptions: NextAuthOptions = {
             agentProfile: data.user.agentProfile ?? null,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
+            remember: credentials.remember === "true",
           };
         } catch {
           return null;
@@ -76,6 +78,8 @@ export const authOptions: NextAuthOptions = {
           accessToken: user.accessToken,
           refreshToken: user.refreshToken,
           accessTokenExpires: Date.now() + 14 * 60 * 1000,
+          // 30 days if remember, 1 day otherwise
+          maxAge: user.remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60,
           avatar: user.avatar,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -109,6 +113,6 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
 
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   secret: process.env.NEXTAUTH_SECRET,
 };

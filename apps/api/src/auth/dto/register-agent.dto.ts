@@ -42,6 +42,11 @@ export class RegisterAgentDto {
   @IsString()
   country: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  city?: string;
+
   @IsEmail({}, { message: "Email non valida" })
   email: string;
 
@@ -66,11 +71,13 @@ export class RegisterAgentDto {
   @IsString()
   confirmPassword: string;
 
+  @IsOptional()
   @IsEnum(PlanEnum)
-  plan: "CONNECT" | "SIGNATURE";
+  plan?: "CONNECT" | "SIGNATURE";
 
+  @IsOptional()
   @IsEnum(BillingEnum)
-  billingCycle: "MONTHLY" | "YEARLY";
+  billingCycle?: "MONTHLY" | "YEARLY";
 
   @IsOptional()
   badgeAddon?: boolean;

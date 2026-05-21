@@ -84,6 +84,7 @@ export class AuthService {
         lastName: dto.lastName,
         displayName: `${dto.firstName} ${dto.lastName}`,
         country: dto.country,
+        city: dto.city,
         phone: dto.phone,
       },
     });
@@ -113,10 +114,12 @@ export class AuthService {
         role: UserRole.AGENCY,
         displayName: dto.agencyName,
         country: dto.country,
+        city: dto.city,
         phone: dto.phone,
         agencyProfile: {
           create: {
             name: dto.agencyName,
+            ownerName: dto.ownerName,
             slug,
             taxNumber: dto.taxNumber,
             licenses: dto.license,
@@ -126,9 +129,9 @@ export class AuthService {
         },
         subscription: {
           create: {
-            plan: dto.plan as any,
-            status: "TRIALING" as any,
-            billingCycle: dto.billingCycle as any,
+            plan: (dto.plan ?? "CONNECT") as any,
+            status: "INACTIVE" as any,
+            billingCycle: (dto.billingCycle ?? "MONTHLY") as any,
             basePrice: 29.9,
             badgeAddon: dto.badgeAddon ?? false,
             featuredCount: dto.featuredCount ?? 0,
@@ -169,6 +172,7 @@ export class AuthService {
         lastName: dto.lastName,
         displayName: `${dto.firstName} ${dto.lastName}`,
         country: dto.country,
+        city: dto.city,
         phone: dto.phone,
         agentProfile: {
           create: {
@@ -181,9 +185,9 @@ export class AuthService {
         },
         subscription: {
           create: {
-            plan: dto.plan as any,
-            status: "TRIALING" as any,
-            billingCycle: dto.billingCycle as any,
+            plan: (dto.plan ?? "CONNECT") as any,
+            status: "INACTIVE" as any,
+            billingCycle: (dto.billingCycle ?? "MONTHLY") as any,
             basePrice: 29.9,
             badgeAddon: dto.badgeAddon ?? false,
             featuredCount: dto.featuredCount ?? 0,

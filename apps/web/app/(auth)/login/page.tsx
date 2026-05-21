@@ -18,6 +18,7 @@ export default function LoginPage() {
   const { getToken } = useRecaptcha();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -30,6 +31,7 @@ export default function LoginPage() {
     const res = await signIn("credentials", {
       email,
       password,
+      remember: String(remember),
       redirect: false,
     });
     setLoading(false);
@@ -124,6 +126,17 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Ricordami */}
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 accent-[#26A55B]"
+              />
+              <span className="text-sm" style={{ color: "#374151" }}>Ricordami</span>
+            </label>
 
             {/* Errore */}
             {error && (
