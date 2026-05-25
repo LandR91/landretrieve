@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useAuth } from "@/hooks/use-auth";
 
 type NavItem =
   | { type: "link"; label: string; href: string }
   | { type: "action"; label: string; action: () => void }
-  | { type: "separator" }
   | { type: "section"; label: string };
 
 function useNavItems(): NavItem[] {
   const { role } = useAuth();
-  const router = useRouter();
 
   const logout: NavItem = {
     type: "action",
@@ -23,13 +21,13 @@ function useNavItems(): NavItem[] {
 
   if (role === "VISITOR") {
     return [
-      { type: "link", label: "Dashboard", href: "/dashboard" },
-      { type: "link", label: "Attività", href: "/dashboard/attivita" },
+      { type: "section", label: "IMMOBILI" },
       { type: "link", label: "Preferiti", href: "/dashboard/preferiti" },
-      { type: "link", label: "Cerca Immobile", href: "/dashboard/ricerche" },
+      { type: "link", label: "Ricerche salvate", href: "/dashboard/ricerche" },
+      { type: "section", label: "ATTIVITÀ" },
+      { type: "link", label: "Offerte", href: "/dashboard/offerte" },
       { type: "link", label: "Messaggi", href: "/dashboard/messaggi" },
-      { type: "link", label: "Le mie offerte", href: "/dashboard/offerte" },
-      { type: "separator" },
+      { type: "section", label: "PROFILO" },
       { type: "link", label: "Il mio profilo", href: "/dashboard/profilo" },
       logout,
     ];
@@ -90,12 +88,20 @@ function useNavItems(): NavItem[] {
 
   // ADMIN
   return [
+    { type: "section", label: "PANORAMICA" },
     { type: "link", label: "Dashboard", href: "/dashboard" },
-    { type: "link", label: "Utenti", href: "/dashboard/utenti" },
-    { type: "link", label: "Agenzie", href: "/dashboard/agenzie" },
-    { type: "link", label: "Immobili", href: "/dashboard/immobili" },
+    { type: "section", label: "GESTIONE" },
+    { type: "link", label: "Utenti", href: "/admin/profili" },
+    { type: "link", label: "Agenzie", href: "/admin/profili" },
+    { type: "link", label: "Immobili", href: "/admin/ipp" },
     { type: "link", label: "Abbonamenti", href: "/dashboard/abbonamento" },
-    { type: "separator" },
+    { type: "section", label: "MODERAZIONE" },
+    { type: "link", label: "Badge", href: "/admin/badge" },
+    { type: "link", label: "IPP", href: "/admin/ipp" },
+    { type: "link", label: "Recensioni", href: "/admin/recensioni" },
+    { type: "link", label: "Segnalazioni", href: "/admin/segnalazioni" },
+    { type: "link", label: "Statistiche", href: "/admin/statistiche" },
+    { type: "section", label: "PROFILO" },
     { type: "link", label: "Il mio profilo", href: "/dashboard/profilo" },
     logout,
   ];
@@ -120,24 +126,15 @@ export function DashSidebar() {
     >
       <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 8px" }}>
         {items.map((item, i) => {
-          if (item.type === "separator") {
-            return (
-              <div
-                key={i}
-                style={{ height: 1, backgroundColor: "#B0B0B0", margin: "6px 8px" }}
-              />
-            );
-          }
-
           if (item.type === "section") {
             return (
               <div
                 key={i}
                 style={{
-                  padding: "10px 12px 4px",
-                  fontSize: 10,
+                  padding: "1rem 1.25rem 0.25rem",
+                  fontSize: "0.65rem",
                   fontWeight: 700,
-                  letterSpacing: "0.08em",
+                  letterSpacing: "0.1em",
                   color: "#6b7280",
                   textTransform: "uppercase",
                 }}
@@ -181,7 +178,7 @@ export function DashSidebar() {
 
           return (
             <Link
-              key={item.href}
+              key={`${item.href}-${i}`}
               href={item.href}
               style={{
                 display: "block",
