@@ -20,6 +20,7 @@ declare module "next-auth" {
     role: string;
     accessToken: string;
     refreshToken: string;
+    remember: boolean;
     avatar: string | null;
     firstName: string | null;
     lastName: string | null;
